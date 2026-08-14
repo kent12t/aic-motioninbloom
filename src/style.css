@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&display=swap');
+
+:root {
+  --rose-cream: #fff7ed;
+  --dawn: #ffe5bc;
+  --petal: #ff916b;
+  --petal-deep: #ea5f52;
+  --leaf: #4d8556;
+  --ink: #2f1f24;
+  --soft-ink: #62414b;
+  --card: rgba(255, 252, 245, 0.86);
+  --line: rgba(98, 65, 75, 0.2);
+  --highlight: #ffd67a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Manrope', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% 15%, rgba(255, 180, 149, 0.4), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(255, 238, 189, 0.6), transparent 35%),
+    linear-gradient(180deg, #fff8eb 0%, #ffe5c6 100%);
+}
+
+#app {
+  width: min(1120px, calc(100vw - 32px));
+  margin: 16px auto;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 18px;
+}
+
+.camera-card,
+.mission-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 36px rgba(70, 35, 42, 0.15);
+  padding: 18px;
+}
+
+.camera-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--soft-ink);
+  font-size: 0.75rem;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-family: 'Fraunces', serif;
+  line-height: 1.05;
+}
+
+h1 {
+  margin-top: 6px;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+}
+
+h2 {
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+}
+
+.timer-pill {
+  min-width: 84px;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(255, 214, 122, 0.45);
+  border: 1px solid rgba(118, 79, 30, 0.18);
+  padding: 8px 14px;
+  font-weight: 700;
+}
+
+.camera-stage {
+  margin-top: 14px;
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(47, 31, 36, 0.2);
+  background: #26191c;
+  aspect-ratio: 16/10;
+}
+
+.camera-stage video,
+.camera-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.camera-stage canvas {
+  pointer-events: none;
+}
+
+.pose-state {
+  margin: 12px 2px 0;
+  color: var(--soft-ink);
+  font-size: 0.95rem;
+}
+
+.mission-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.flower-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+}
+
+.flower {
+  width: 130px;
+  height: 150px;
+  position: relative;
+}
+
+.stem {
+  position: absolute;
+  left: 50%;
+  top: 66px;
+  width: 12px;
+  height: 72px;
+  background: linear-gradient(180deg, #76b660 0%, #457b4b 100%);
+  transform: translateX(-50%);
+  border-radius: 18px;
+}
+
+.petal,
+.core {
+  position: absolute;
+  left: 50%;
+  top: 44px;
+  transform-origin: center bottom;
+  transition: transform 500ms ease, opacity 500ms ease;
+}
+
+.petal {
+  width: 42px;
+  height: 62px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, var(--petal) 0%, var(--petal-deep) 100%);
+  opacity: 0;
+}
+
+.core {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #fff6be 0%, #f4c84e 80%);
+  transform: translate(-50%, 0) scale(0.2);
+}
+
+.p1 { transform: translate(-50%, -16px) rotate(0deg) scale(0.2); }
+.p2 { transform: translate(-50%, -6px) rotate(65deg) scale(0.2); }
+.p3 { transform: translate(-50%, -6px) rotate(-65deg) scale(0.2); }
+.p4 { transform: translate(-50%, 6px) rotate(180deg) scale(0.2); }
+
+.flower.stage-1 .p1,
+.flower.stage-2 .p1,
+.flower.stage-2 .p2,
+.flower.stage-2 .p3,
+.flower.stage-3 .p1,
+.flower.stage-3 .p2,
+.flower.stage-3 .p3,
+.flower.stage-3 .p4 {
+  opacity: 1;
+}
+
+.flower.stage-1 .p1 {
+  transform: translate(-50%, -20px) rotate(0deg) scale(0.75);
+}
+
+.flower.stage-2 .p1 {
+  transform: translate(-50%, -24px) rotate(0deg) scale(0.95);
+}
+
+.flower.stage-2 .p2 {
+  transform: translate(-50%, -8px) rotate(55deg) scale(0.8);
+}
+
+.flower.stage-2 .p3 {
+  transform: translate(-50%, -8px) rotate(-55deg) scale(0.8);
+}
+
+.flower.stage-3 .p1 {
+  transform: translate(-50%, -28px) rotate(0deg) scale(1);
+}
+
+.flower.stage-3 .p2 {
+  transform: translate(-50%, -10px) rotate(62deg) scale(0.95);
+}
+
+.flower.stage-3 .p3 {
+  transform: translate(-50%, -10px) rotate(-62deg) scale(0.95);
+}
+
+.flower.stage-3 .p4 {
+  transform: translate(-50%, 8px) rotate(180deg) scale(0.88);
+}
+
+.flower.stage-1 .core,
+.flower.stage-2 .core,
+.flower.stage-3 .core {
+  transform: translate(-50%, 2px) scale(0.75);
+}
+
+.flower.stage-3 {
+  animation: bloomPulse 2600ms ease-in-out infinite;
+}
+
+@keyframes bloomPulse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+#task-instructions {
+  margin: 0;
+  color: var(--soft-ink);
+  line-height: 1.4;
+}
+
+.primary-button {
+  margin-top: 4px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ffb16a 0%, #f38067 100%);
+  color: white;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.primary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(162, 63, 54, 0.3);
+}
+
+.primary-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.task-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.task-list li {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.95rem;
+  color: var(--soft-ink);
+  display: flex;
+  gap: 8px;
+}
+
+.task-list .active {
+  border-color: rgba(243, 128, 103, 0.7);
+  background: rgba(255, 145, 107, 0.12);
+  color: var(--ink);
+}
+
+.task-list .done {
+  border-color: rgba(89, 143, 93, 0.65);
+  background: rgba(89, 143, 93, 0.12);
+}
+
+.result-message {
+  margin: 2px 0 0;
+  min-height: 48px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #5b3a3f;
+}
+
+@media (max-width: 960px) {
+  #app {
+    width: min(1120px, calc(100vw - 20px));
+    margin: 10px auto;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-card,
+  .mission-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .flower-wrap {
+    min-height: 140px;
+  }
+}
