@@ -10,10 +10,11 @@ export function TaskList({ tests, phase, currentTestIndex }: TaskListProps) {
   return (
     <ul className="task-list">
       {tests.map((test, index) => {
+        const isSessionActive = phase === 'calibrating' || phase === 'test' || phase === 'intro'
         const state =
           index < currentTestIndex
             ? 'done'
-            : index === currentTestIndex && phase === 'test'
+            : index === currentTestIndex && isSessionActive
               ? 'active'
               : 'pending'
 

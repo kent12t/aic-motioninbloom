@@ -23,6 +23,9 @@ interface EngineState {
   balanceBestHoldMs: number
   balanceSway: number
   balanceLastNoseX: number | null
+  lastMetricsLogSecond: number
+  lastCalibrationLogSecond: number
+  poseDetected: boolean
   results: TestResult[]
 }
 
@@ -47,6 +50,9 @@ function createInitialEngineState(): EngineState {
     balanceBestHoldMs: 0,
     balanceSway: 0,
     balanceLastNoseX: null,
+    lastMetricsLogSecond: -1,
+    lastCalibrationLogSecond: -1,
+    poseDetected: false,
     results: [],
   }
 }
@@ -70,6 +76,15 @@ function averagePoint(
     return null
   }
   return { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 }
+}
+
+function logActivity(event: string, details?: Record<string, number | string | boolean>): void {
+  const timestamp = new Date().toLocaleTimeString()
+  if (details) {
+    console.log(`[MotionInBloom ${timestamp}] ${event}`, details)
+    return
+  }
+  console.log(`[MotionInBloom ${timestamp}] ${event}`)
 }
 
 export function useMotionInBloomGame() {
@@ -275,19 +290,32 @@ export function useMotionInBloomGame() {
     state.phase = 'test'
     state.testStartTime = now
     state.lastFrameTime = now
+    state.lastMetricsLogSecond = -1
 
     setPhase('test')
     setCurrentTestIndex(state.currentTestIndex)
     setTaskName(currentTest.name)
     setTaskInstructions(currentTest.instructions)
     setButtonVisible(false)
+    logActivity('Test started', {
+      test: currentTest.name,
+      index: state.currentTestIndex + 1,
+      total: TESTS.length,
+    })
   }
 
   const finishTest = (now: number): void => {
     const state = engineRef.current
     const elapsed = now - state.testStartTime
-    state.results.push(calculateResultForCurrentTest(elapsed))
+    const result = calculateResultForCurrentTest(elapsed)
+    state.results.push(result)
     setCompletedTests(state.results.length)
+    logActivity('Test completed', {
+      test: TESTS[state.currentTestIndex]?.name ?? 'Unknown',
+      completion: Math.round(result.completion * 100),
+      quality: Math.round(result.quality * 100),
+      endurance: Math.round(result.endurance * 100),
+    })
 
     state.currentTestIndex += 1
     if (state.currentTestIndex >= TESTS.length) {
@@ -307,6 +335,10 @@ export function useMotionInBloomGame() {
       setTimerLabel('Done')
       setButtonVisible(true)
       setButtonLabel('Restart Session')
+      logActivity('Session complete', {
+        testsCompleted: state.results.length,
+        overallScore: Math.round(averageScore * 100),
+      })
       return
     }
 
@@ -321,6 +353,11 @@ export function useMotionInBloomGame() {
     setTimerLabel(formatTimer(nextTest.durationSec))
     setButtonVisible(true)
     setButtonLabel('Start Next Task')
+    logActivity('Next test ready', {
+      test: nextTest.name,
+      index: state.currentTestIndex + 1,
+      total: TESTS.length,
+    })
   }
 
   const startCalibration = (): void => {
@@ -328,6 +365,7 @@ export function useMotionInBloomGame() {
     state.phase = 'calibrating'
     state.currentTestIndex = 0
     state.calibrationProgress = 0
+    state.lastCalibrationLogSecond = -1
     state.results = []
 
     setPhase('calibrating')
@@ -338,6 +376,7 @@ export function useMotionInBloomGame() {
     setResultMessage('')
     setTimerLabel('00:03')
     setButtonVisible(false)
+    logActivity('Calibration started')
   }
 
   const updateCalibration = (landmarks: LandmarkPoint[] | null, deltaMs: number): void => {
@@ -366,6 +405,14 @@ export function useMotionInBloomGame() {
 
     state.calibrationProgress += deltaMs
     const remaining = clamp((3000 - state.calibrationProgress) / 1000, 0, 3)
+    const calibrationSecond = Math.floor(state.calibrationProgress / 1000)
+    if (calibrationSecond !== state.lastCalibrationLogSecond) {
+      state.lastCalibrationLogSecond = calibrationSecond
+      logActivity('Calibration progress', {
+        percent: Math.round(clamp(state.calibrationProgress / 3000, 0, 1) * 100),
+        secondsRemaining: Number(remaining.toFixed(1)),
+      })
+    }
     setTimerLabel(formatTimer(remaining))
     setPoseState('Great positioning. Hold steady...')
 
@@ -433,9 +480,20 @@ export function useMotionInBloomGame() {
       })) ?? null
 
     drawPose(landmarks)
-    setPoseState(landmarks ? 'Pose tracked. Keep moving naturally.' : 'No pose detected. Step into frame and face the camera.')
 
     const state = engineRef.current
+    const poseDetected = Boolean(landmarks)
+    if (poseDetected !== state.poseDetected) {
+      state.poseDetected = poseDetected
+      logActivity(poseDetected ? 'Pose detected' : 'Pose lost')
+    }
+
+    if (!landmarks) {
+      setPoseState('No pose detected. Step into frame and face the camera.')
+    } else if (state.phase !== 'test') {
+      setPoseState('Pose tracked. Keep moving naturally.')
+    }
+
     if (state.phase === 'calibrating') {
       const deltaMs = state.lastFrameTime > 0 ? now - state.lastFrameTime : 0
       state.lastFrameTime = now
@@ -457,6 +515,50 @@ export function useMotionInBloomGame() {
         state.lastFrameTime = now
         const elapsedSec = (now - state.testStartTime) / 1000
         const remaining = Math.max(0, currentTest.durationSec - elapsedSec)
+        if (currentTest.id === 'stand-sit') {
+          setPoseState(`Stand/Sit reps: ${state.standSitReps}/6 | Posture: ${state.standPosture}`)
+        } else if (currentTest.id === 'walk-turn') {
+          const walkRange =
+            state.walkMaxShoulder > 0
+              ? (state.walkMaxShoulder - state.walkMinShoulder) / state.walkMaxShoulder
+              : 0
+          setPoseState(
+            `Walk range: ${Math.round(clamp(walkRange * 3, 0, 1) * 100)}% | Turn signals: ${state.walkTurnSignals}/2`,
+          )
+        } else {
+          setPoseState(
+            `Balance hold: ${(state.balanceBestHoldMs / 1000).toFixed(1)}s | Stability: ${Math.round(clamp(1 - state.balanceSway / 300, 0, 1) * 100)}%`,
+          )
+        }
+
+        const metricLogSecond = Math.floor(elapsedSec)
+        if (metricLogSecond !== state.lastMetricsLogSecond) {
+          state.lastMetricsLogSecond = metricLogSecond
+          if (currentTest.id === 'stand-sit') {
+            logActivity('Movement update', {
+              test: currentTest.name,
+              reps: state.standSitReps,
+              posture: state.standPosture,
+            })
+          } else if (currentTest.id === 'walk-turn') {
+            const walkRange =
+              state.walkMaxShoulder > 0
+                ? (state.walkMaxShoulder - state.walkMinShoulder) / state.walkMaxShoulder
+                : 0
+            logActivity('Movement update', {
+              test: currentTest.name,
+              rangePercent: Math.round(clamp(walkRange * 3, 0, 1) * 100),
+              turnSignals: state.walkTurnSignals,
+            })
+          } else {
+            logActivity('Movement update', {
+              test: currentTest.name,
+              holdSeconds: Number((state.balanceBestHoldMs / 1000).toFixed(1)),
+              stabilityPercent: Math.round(clamp(1 - state.balanceSway / 300, 0, 1) * 100),
+            })
+          }
+        }
+
         setTimerLabel(formatTimer(remaining))
         if (remaining <= 0) {
           finishTest(now)
@@ -472,15 +574,18 @@ export function useMotionInBloomGame() {
   const handlePrimaryAction = (): void => {
     const state = engineRef.current
     if (state.phase === 'results') {
+      logActivity('Restarting session')
       startCalibration()
       return
     }
 
     if (state.phase === 'intro') {
       if (state.currentTestIndex < 0) {
+        logActivity('Starting new session')
         startCalibration()
         return
       }
+      logActivity('User started next task')
       beginTest(performance.now())
     }
   }
