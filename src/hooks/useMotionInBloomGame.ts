@@ -520,6 +520,7 @@ export function useMotionInBloomGame() {
       }
       detectorRef.current?.close()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return {

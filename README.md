@@ -20,6 +20,7 @@ The game uses camera-based pose detection with MoveNet (TensorFlow pose-detectio
 ```bash
 npm install
 npm run dev
+npm run lint
 ```
 
 Open the local Vite URL in a modern browser and allow camera permission.
