@@ -4,25 +4,31 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prepare:pose": "node scripts/prepare-pose-assets.mjs",
+    "test:tracking": "node --test scripts/tracking.test.mjs",
+    "predev": "npm run prepare:pose",
     "dev": "vite",
+    "prebuild": "npm run prepare:pose",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint ."
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "eslint": "^9.38.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.4.0",
-    "typescript-eslint": "^8.46.2",
     "typescript": "~6.0.2",
+    "typescript-eslint": "^8.46.2",
     "vite": "^8.2.0"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
+    "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }
