@@ -14,6 +14,7 @@ export interface TrackingFeedback {
   message: string
   repetition: boolean
   accepted: boolean
+  stood: boolean
 }
 
 function measure(points: LandmarkPoint[]): Measurement | null {
@@ -71,7 +72,7 @@ export class SitStandTracker {
     const feedback = (message: string, accepted = false, repetition = false): TrackingFeedback => ({
       ready: this.baseline !== null && accepted,
       progress: this.baseline ? 1 : this.samples.length ? Math.min(1, (now - this.calibrationSince) / TRACKING.calibrationMs) : 0,
-      message, accepted, repetition,
+      message, accepted, repetition, stood: false,
     })
     const measured = points ? measure(points) : null
     const baseline = this.baseline
@@ -136,7 +137,7 @@ export class SitStandTracker {
     const sitting = this.smooth.gap < base.gap + TRACKING.seatedGapDelta
       && Math.abs(rise) < TRACKING.seatedRiseTolerance
     if (!playing) {
-      const result = feedback(sitting ? 'Starting position set. Stay seated and press Begin.'
+      const result = feedback(sitting ? 'Starting position set. Stay seated and press Play now.'
         : 'Return to your seated starting position before beginning.', true)
       result.ready = sitting
       return result
@@ -147,17 +148,23 @@ export class SitStandTracker {
       this.candidateSince = now
     }
     let repetition = false
+    let stood = false
     if (detected !== 'unknown' && detected !== this.posture && now - this.candidateSince >= TRACKING.holdMs) {
       const previousPosture = this.posture
       this.posture = detected
-      if (detected === 'standing' && previousPosture === 'sitting') this.hasStood = true
+      if (detected === 'standing' && previousPosture === 'sitting') {
+        this.hasStood = true
+        stood = true
+      }
       if (detected === 'sitting') {
         repetition = this.hasStood
         this.hasStood = false
       }
     }
-    return feedback(this.hasStood ? 'Sit back down slowly and fully.'
+    const result = feedback(this.hasStood ? 'Sit back down fully.'
       : this.posture === 'unknown' ? 'Return to your seated starting position.'
-        : 'Stand tall slowly, then sit back down.', true, repetition)
+        : 'Stand up fully, then sit back down.', true, repetition)
+    result.stood = stood
+    return result
   }
 }

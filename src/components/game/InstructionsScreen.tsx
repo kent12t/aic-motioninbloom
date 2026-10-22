@@ -1,30 +1,28 @@
-import type { ReactNode } from 'react'
-import { GAME } from '../../game/config'
+import { GameButton } from './GameButton'
 
-interface InstructionsScreenProps {
-  children: ReactNode
-  ready: boolean
-  loading: boolean
-  onStart: () => void
-  onRecalibrate: () => void
-}
+const instructions = [
+  <>Start by sitting in the<br />middle of the chair</>,
+  <>Cross your arms<br />or keep them over<br />your chest</>,
+  <>Stand up fully and<br />sit down again</>,
+  <>Repeat this<br />five times without<br />stopping and watch<br />the flowers bloom!</>,
+]
 
-export function InstructionsScreen({ children, ready, loading, onStart, onRecalibrate }: InstructionsScreenProps) {
+export function InstructionsScreen({ ready, onStart }: { ready: boolean; onStart: () => void }) {
   return (
-    <section className="intro-card">
-      <p className="eyebrow">Motion in Bloom</p>
-      <h1>Stand tall. Grow a garden.</h1>
-      <p className="lead">Complete {GAME.target} slow stand-and-sit movements in {GAME.seconds} seconds.</p>
-      <ol className="instructions">
-        <li>Place a stable chair inside the guide, with shoulders, hips and knees visible.</li>
-        <li>Sit fully with both feet on the floor. Hold still to set your starting position.</li>
-        <li>Stand tall, pause briefly, then sit fully. Each complete pair grows one flower.</li>
+    <section className="screen instructions-screen" aria-labelledby="instructions-title">
+      <h1 id="instructions-title"><span className="windsor">How Strong Are Your Legs?</span></h1>
+      <p className="instructions-subtitle">Stand and sit as quickly as you can</p>
+      <ol className="instruction-list">
+        {instructions.map((copy, index) => (
+          <li key={index}>
+            <span className="instruction-number" aria-hidden="true"><span className="windsor">{index + 1}</span></span>
+            <span className="instruction-copy">{copy}</span>
+            <img src={`/instr${index + 1}.png`} alt="" />
+          </li>
+        ))}
       </ol>
-      <div className="camera-preview">{children}</div>
-      <button className="primary-button" onClick={onStart} disabled={!ready}>
-        {loading ? 'Preparing camera…' : ready ? 'Begin' : 'Set your seated position'}
-      </button>
-      {!loading && <button className="recalibrate-button" onClick={onRecalibrate}>Reset seated position</button>}
+      <p className="safety-reminder">Remember, be careful and<br />prioritise your safety</p>
+      <GameButton className="play-now" disabled={!ready} onClick={onStart}>Play now</GameButton>
     </section>
   )
 }

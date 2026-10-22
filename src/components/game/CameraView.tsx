@@ -7,20 +7,23 @@ interface CameraViewProps {
   calibrationProgress?: number
   error?: string
   onRetry: () => void
+  hidden?: boolean
+  setup?: boolean
+  showMessage?: boolean
 }
 
-export function CameraView({ videoRef, overlayRef, message, calibrationProgress, error, onRetry }: CameraViewProps) {
+export function CameraView({ videoRef, overlayRef, message, calibrationProgress, error, onRetry, hidden, setup, showMessage }: CameraViewProps) {
   return (
-    <section className="camera-panel" aria-label="Player camera">
+    <section className={`camera-panel ${hidden ? 'camera-hidden' : ''} ${setup ? 'camera-setup' : ''}`} aria-label="Player camera" aria-hidden={hidden || undefined}>
       <div className="camera-stage">
         <video ref={videoRef} autoPlay playsInline muted />
         <canvas ref={overlayRef} />
       </div>
-      <p className="camera-message" role="status">{error || message}</p>
+      {(setup || showMessage || error) && <p className="camera-message" role={hidden ? undefined : 'status'}>{error || message}</p>}
       {calibrationProgress !== undefined && (
         <progress className="calibration-progress" value={calibrationProgress} max={1} aria-label="Seated calibration" />
       )}
-      {error && <button onClick={onRetry}>Retry camera</button>}
+      {error && !hidden && <button className="retry-camera" onClick={onRetry}>Retry camera</button>}
     </section>
   )
 }

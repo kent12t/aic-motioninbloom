@@ -1,11 +1,8 @@
-import type { ReactNode } from 'react'
-
-export function CountdownScreen({ countdown, children }: { countdown: number; children: ReactNode }) {
+export function CountdownScreen({ countdown }: { countdown: number }) {
   return (
-    <section className="countdown-content" aria-live="assertive">
-      <p>Stay seated. Move slowly when the game starts.</p>
-      <strong key={countdown}>{countdown || 'Start!'}</strong>
-      <div className="camera-preview">{children}</div>
+    <section className="screen countdown-screen" aria-label="Get ready">
+      <p className="safety-reminder">Remember, be careful and<br />prioritise your safety</p>
+      <div className="countdown-number" role="timer" aria-live="assertive"><span className="windsor">{countdown}</span></div>
     </section>
   )
 }

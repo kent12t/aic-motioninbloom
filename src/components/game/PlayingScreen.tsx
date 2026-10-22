@@ -1,22 +1,19 @@
-import type { ReactNode } from 'react'
-import { BloomFlower } from '../BloomFlower'
 import { GAME } from '../../game/config'
+import type { RoundState } from '../../game/flowerRound'
+import { FlowerVideo } from './FlowerVideo'
 
-export function PlayingScreen({ secondsLeft, standCount, children }: {
-  secondsLeft: number; standCount: number; children: ReactNode
-}) {
+export function PlayingScreen({ session }: { session: RoundState }) {
+  const seconds = Math.ceil(Math.max(0, GAME.seconds - session.elapsed))
+  const time = `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`
+  const flower = session.flowers[session.completed.length]
   return (
-    <>
+    <section className="screen playing-screen" aria-label="Stand and sit to bloom flowers">
       <header className="game-header">
-        <div><span>Time</span><strong>{Math.ceil(secondsLeft)}s</strong></div>
-        <p>Motion in Bloom</p>
-        <div><span>Stands</span><strong>{standCount} / {GAME.target}</strong></div>
+        <div><span>Time</span><strong role="timer" aria-label={`${seconds} seconds remaining`}>{time}</strong></div>
+        <div><span>Score</span><strong aria-live="polite" aria-label={`${session.completed.length} of ${GAME.target} sets complete`}>{session.completed.length}</strong></div>
       </header>
-      <section className="bloom-stage" aria-live="polite">
-        <div className="bloom-video" key={standCount}><BloomFlower stage={standCount > 0 ? 3 : 0} /></div>
-        <h2>{standCount > 0 ? `Flower ${standCount} bloomed!` : 'Your garden is ready'}</h2>
-      </section>
-      {children}
-    </>
+      <h1 className="encouragement"><span className="windsor">Keep Going!</span></h1>
+      {flower && <FlowerVideo key={session.completed.length} flower={flower} blooming={session.blooming} />}
+    </section>
   )
 }

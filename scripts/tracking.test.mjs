@@ -16,6 +16,9 @@ const types = await moduleUrl('../src/types/game.ts')
 const { SitStandTracker } = await import(await moduleUrl('../src/game/sitStandTracker.ts', {
   './config': config, '../types/game': types,
 }))
+const { FlowerRound, resultOutcome } = await import(await moduleUrl('../src/game/flowerRound.ts', {
+  './config': config,
+}))
 
 function pose(standing = false, x = 0.5) {
   const points = Array.from({ length: 33 }, () => ({ x, y: 0.5, visibility: 0.99 }))
@@ -28,16 +31,18 @@ function session() {
   const tracker = new SitStandTracker()
   let time = 0
   let repetitions = 0
+  let stands = 0
   const feed = (points, duration, playing = true) => {
     let last
     for (let i = 0; i < duration / 50; i++) {
       time += 50
       last = tracker.update(points, time, playing)
       if (last.repetition) repetitions++
+      if (last.stood) stands++
     }
     return last
   }
-  return { tracker, feed, count: () => repetitions }
+  return { tracker, feed, count: () => repetitions, stands: () => stands }
 }
 
 test('requires stable seated calibration; standing and outside-zone poses cannot calibrate', () => {
@@ -120,4 +125,67 @@ test('large scale changes and non-finite landmarks are rejected', () => {
   corrupt[23].visibility = NaN
   assert.equal(s.feed(corrupt, 1000).accepted, false)
   assert.equal(s.count(), 0)
+})
+
+test('emits standing once per confirmed rise, never for jitter or a standing recovery after loss', () => {
+  const s = session()
+  s.feed(pose(), 2000, false)
+  s.feed(pose(true), 100)
+  s.feed(pose(), 1000)
+  assert.equal(s.stands(), 0)
+  s.feed(pose(true), 2000)
+  assert.equal(s.stands(), 1)
+  assert.equal(s.count(), 0)
+  s.feed(null, 1000)
+  s.feed(pose(true), 1000)
+  s.feed(pose(), 1000)
+  assert.equal(s.stands(), 1)
+  assert.equal(s.count(), 0)
+  s.feed(pose(true), 1000)
+  s.feed(pose(), 1000)
+  assert.equal(s.stands(), 2)
+  assert.equal(s.count(), 1)
+})
+
+test('round records actual flower order, permits duplicates, and advances only on completed cycles', () => {
+  const round = new FlowerRound()
+  const choices = [0, 0.4, 0, 0.8, 0.6]
+  round.start(1000, () => choices.shift())
+  assert.deepEqual(round.state.flowers, ['pink', 'violet', 'pink', 'yellow', 'orange'])
+  round.update(1100, 'completed')
+  assert.deepEqual(round.state.completed, [])
+  for (let i = 0; i < 5; i++) {
+    round.update(1500 + i * 1500, 'stood')
+    assert.equal(round.state.completed.length, i)
+    round.update(2000 + i * 1500, 'completed')
+  }
+  assert.equal(round.state.finished, true)
+  assert.deepEqual(round.state.completed, round.state.flowers)
+  const frozen = round.state
+  round.update(90000, 'completed')
+  assert.equal(round.state, frozen)
+})
+
+test('deadline wins over a return to sitting at exactly 40 seconds; partial results exclude current bud', () => {
+  const round = new FlowerRound()
+  round.start(500, () => 0.2)
+  round.update(1000, 'stood')
+  round.update(2000, 'completed')
+  round.update(3000, 'stood')
+  round.update(40500, 'completed')
+  assert.equal(round.state.finished, true)
+  assert.equal(round.state.elapsed, 40)
+  assert.deepEqual(round.state.completed, ['purple'])
+  assert.equal(resultOutcome(round.state.completed.length, round.state.elapsed), 'incomplete')
+  const zero = new FlowerRound()
+  zero.start(0)
+  assert.equal(zero.update(40001).completed.length, 0)
+})
+
+test('outcomes use unrounded time at 12 seconds and reject completion at the deadline', () => {
+  assert.equal(resultOutcome(5, 11.999), 'fast')
+  assert.equal(resultOutcome(5, 12), 'standard')
+  assert.equal(resultOutcome(5, 39.999), 'standard')
+  assert.equal(resultOutcome(5, 40), 'incomplete')
+  assert.equal(resultOutcome(4, 10), 'incomplete')
 })

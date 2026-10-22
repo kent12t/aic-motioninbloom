@@ -5,7 +5,7 @@ import type { LandmarkPoint } from '../types/game'
 
 type PoseFrame = (points: LandmarkPoint[] | null, now: number) => boolean
 
-export function usePoseCamera(onPose: PoseFrame) {
+export function usePoseCamera(onPose: PoseFrame, enabled = true) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -25,6 +25,7 @@ export function usePoseCamera(onPose: PoseFrame) {
   }, [])
 
   useEffect(() => {
+    if (!enabled) return
     let active = true
     let frame = 0
     let stream: MediaStream | null = null
@@ -71,8 +72,9 @@ export function usePoseCamera(onPose: PoseFrame) {
     }
     const setup = async () => {
       try {
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('Camera requires HTTPS or localhost. Open the game in a secure browser tab.')
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: false, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false, video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } },
         })
         if (!active) { stream.getTracks().forEach((track) => track.stop()); return }
         streamRef.current = stream
@@ -98,7 +100,7 @@ export function usePoseCamera(onPose: PoseFrame) {
       stream?.getTracks().forEach((track) => track.stop())
       if (streamRef.current === stream) streamRef.current = null
     }
-  }, [generation])
+  }, [enabled, generation])
 
   const retry = useCallback(() => {
     setStatus('loading')

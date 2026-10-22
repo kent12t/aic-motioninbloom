@@ -1,8 +1,10 @@
 export const GAME = {
+  // TEMPORARY: allow screen debugging without a camera/seated baseline.
+  // Restore to true to gate Play now and countdown on successful calibration.
+  requireCalibration: false,
   target: 5,
   seconds: 40,
   countdown: 3,
-  restartSeconds: 45,
 } as const
 
 // Coordinates refer to the unmirrored camera image. Keep the zone symmetric.
