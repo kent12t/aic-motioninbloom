@@ -147,7 +147,7 @@ Apply opacity to a dedicated decorative image/layer only. Text, buttons, QR code
 
 - Light-yellow stage and 20%-opacity bottom floral border.
 - Centered heading, outcome-specific supporting text, ordered flower gallery, explanatory copy, QR block, and purple “Play again” pill button.
-- Five completed flowers form a centered **three-over-two** arrangement. Partial results show only completed flowers, centered; do not fabricate flowers to fill empty slots.
+- Five completed flowers form a centered **three-over-two** arrangement. Partial results show only completed flowers, centered; do not fabricate flowers to fill empty slots. With **zero completed cycles**, show **one centered empty pot** using `/flower-pots.png`, with no flower overlay; the displayed completion count stays 0.
 - Each flower is framed by a thin purple arch with a flat bottom, a landscape background, and a pot. Show the bloomed appearance of the actual recorded flower for that cycle.
 - The result flower is the corresponding video's **last frame**, paused or captured as a transparent still. Alpha-trimmed last-frame derivatives are permitted. Bottom-align the frame image within the pot composition, with padding above the pot base so the stem reaches the soil. Preserve its aspect ratio and layer the front pot rim over the stem tip so it looks planted. The current composition uses a 13% bottom inset, shared across flower types and scaled with the pot frame.
 - Preserve chronological order left-to-right, then top-to-bottom. Never randomize the gallery during rendering or derive flower identity from its array index.
@@ -166,7 +166,7 @@ Use these explanatory paragraphs:
 - **Standard:** “One activity doesn’t tell us everything about your health. Which is why regular screening is important.”
 - **Incomplete:** “Everyone moves at a different pace. What matters is understanding how you are doing and taking steps to stay strong. Regular frailty screening helps us pick up changes early.”
 
-Keep every outcome encouraging. “Failed” is an internal outcome description, not a player-facing grade or diagnosis. Handle zero completed cycles gracefully with the same supportive composition and no invented gallery entries.
+Keep every outcome encouraging. “Failed” is an internal outcome description, not a player-facing grade or diagnosis. Zero completed cycles use the same supportive composition with one empty pot as a visual placeholder, never an awarded flower.
 
 The QR destination has not been supplied. The current `GameQrCode` encodes `window.location.href`; the reference's “read more” destination requires an approved URL. Do not invent a screening-information URL or imply session results are encoded.
 
@@ -235,6 +235,7 @@ Implemented:
 - Confirmed stand events start the current transparent WebM; seated returns score and advance. `FlowerRound` preserves the selected/completed order, enforces the deadline, and prevents late events from mutating results. Rejected playback uses corresponding stills without affecting counting.
 - Purple fast, green standard, and orange incomplete results; actual flowers in ordered pot frames, three-over-two layout, and a two-row partial-result layout for four completed flowers.
 - Result flowers use transparent last-frame stills bottom-anchored with pot-relative padding, with the foreground pot lip covering the stem tip.
+- Zero-completion results show one centered empty pot, with no flower overlay and a completion count of 0.
 - Home/play-again clear acknowledgements, baseline, timers, video, and flower state. Camera tracks/detector are cleaned up at results and full restart.
 
 Verification performed during implementation:
@@ -245,6 +246,7 @@ Verification performed during implementation:
 - Result-pot alignment refinement: Chromium checks of all five last-frame images confirm bottom anchoring with 13% padding, preserved aspect ratio, and foreground-rim layering; portrait/mobile screenshots reviewed. Lint and production build passed.
 - Separate Chromium check with the actual local MediaPipe model/WASM and a synthetic camera stream: initialization/inference, permission denial/retry, disabled uncalibrated start, local-only asset requests, and stopped tracks after home.
 - Temporary calibration-bypass check: with a failed camera, `requireCalibration: false` permits Play now → countdown → gameplay → timeout; a browser-only `true` override restores disabled-button and start-handler gating. Safety acknowledgements stay required. Lint, build, and all 11 tracker/round tests passed after this change.
+- Zero-completion empty-pot update: browser timeout check verified exactly one centered empty pot, no flower overlay, and “You have completed 0 sets”; screenshot reviewed. Lint and production build passed.
 
 Remaining verification/integration:
 

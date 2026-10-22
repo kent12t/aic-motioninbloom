@@ -19,7 +19,12 @@ export function ResultsScreen({ session, onRestart }: { session: RoundState; onR
         {outcome === 'standard' && <p className="well-done">Well done! You’ve completed<br />the challenge!</p>}
         {outcome === 'incomplete' && <p className="completed-message">You have completed {session.completed.length} {session.completed.length === 1 ? 'set' : 'sets'}</p>}
       </header>
-      <ol className="flower-gallery" aria-label={`${session.completed.length} flowers grown, in completion order`}>
+      <ol className="flower-gallery" aria-label={session.completed.length ? `${session.completed.length} flowers grown, in completion order` : 'No flowers grown; one empty pot'}>
+        {session.completed.length === 0 && (
+          <li className="flower-frame" aria-label="Empty flower pot">
+            <img className="flower-pot" src="/flower-pots.png" alt="" />
+          </li>
+        )}
         {session.completed.map((flower, index) => (
           <li className="flower-frame" key={index} aria-label={`Flower ${index + 1}: ${flower}`}>
             <img className="flower-pot" src="/flower-pots.png" alt="" />
