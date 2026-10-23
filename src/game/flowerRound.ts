@@ -24,8 +24,9 @@ export class FlowerRound {
 
   start(now: number, random: () => number = Math.random) {
     this.startedAt = now
+    const remaining = [...FLOWERS]
     this.state = {
-      flowers: Array.from({ length: GAME.target }, () => FLOWERS[Math.floor(random() * FLOWERS.length)]),
+      flowers: Array.from({ length: GAME.target }, () => remaining.splice(Math.floor(random() * remaining.length), 1)[0]),
       completed: [], blooming: false, elapsed: 0, finished: false,
     }
     return this.state

@@ -197,7 +197,7 @@ The QR destination has not been supplied. The current `GameQrCode` encodes `wind
 4. If fewer than five cycles are complete, present the next randomly selected flower paused at its first frame. The next flower appears only after the player sits back down.
 5. On the fifth completed cycle, finish immediately. Results use the recorded completed-flower list, not a new random selection.
 
-Random selection may repeat flower types, as the references show repeated flowers; all five video assets must be available to selection. Select once per cycle/session sequence, not during render. Keep the current attempted flower distinct from the completed list so a timeout while standing does not award an uncompleted cycle.
+Randomize the five supplied video assets without replacement: each round uses every flower type exactly once, with no duplicates among its five cycles. Generate a fresh order for each round, not during render. Keep the current attempted flower distinct from the completed list so a timeout while standing does not award an uncompleted cycle.
 
 Use muted, inline video playback, preload enough to show the paused frame, and handle asynchronous loading and rejected playback promises. Preserve a stable first frame before standing and a stable bloomed frame after playback ends; do not loop. Animation loading or duration must not delay, duplicate, or determine pose-based repetition counting. If the player sits before the clip ends, the completed-cycle event still advances the game.
 
@@ -227,7 +227,7 @@ For applicable UI/gameplay changes:
 - Check floral artwork at 100% on safety/instructions and exactly 20% on countdown/all results, with fully opaque controls and content.
 - Check keyboard operation, visible focus, checkbox labels, disabled start semantics, accessible home control, and readable/scannable QR.
 - In a camera-enabled browser, check first-checkbox initialization, seated calibration, countdown, stand-triggered video playback, sit-triggered advancement, five completed cycles, tracking loss, and restart from each active state.
-- Check WebM transparency, paused first frame, no repeated playback per stand, no animation-driven score, and identical gameplay/result flower ordering, including duplicate selections and partial/zero completion.
+- Check WebM transparency, paused first frame, no repeated playback per stand, no animation-driven score, and identical gameplay/result flower ordering, including no duplicate selections within a round and partial/zero completion.
 - Check outcome boundaries around 12 seconds and the 40-second deadline using raw elapsed time; rounded display must not change the outcome.
 - Run `npm run lint` and `npm run build` for application changes. Run `npm run test:tracking` when tracker or repetition orchestration changes. Browser checks remain necessary for camera and video behavior.
 - For documentation-only changes, review the diff, asset paths, requirements, and links; application checks are not required.
@@ -239,7 +239,7 @@ Implemented:
 - Local fonts and assets, exact brand palette, shared 80%-scaled Windsor treatment, fitted/centered 9:16 stage, and screen-specific floral opacity.
 - Safety acknowledgements with deferred camera startup/background calibration, illustrated instructions, readiness-gated countdown, and gameplay HUD/camera inset. An unobtrusive setup status and “Check camera” control expose framing/retry without blocking checkbox completion.
 - Setup-camera check uses a centered native modal with an integrated close button, large preview, grouped calibration feedback, framing guidance, retry, and Done. Background controls are inert while open; explicit Tab wrapping, Escape dismissal, and native opener-focus restoration support keyboard use. The same video remains mounted through setup and gameplay.
-- Confirmed stand events start the current transparent WebM; seated returns score and advance. `FlowerRound` preserves the selected/completed order, enforces the deadline, and prevents late events from mutating results. Rejected playback uses corresponding stills without affecting counting.
+- Confirmed stand events start the current transparent WebM; seated returns score and advance. `FlowerRound` selects all five flower types in random order without replacement, preserves the selected/completed order, enforces the deadline, and prevents late events from mutating results. Rejected playback uses corresponding stills without affecting counting.
 - Post-calibration vertical displacement uses independent head/shoulder/hip anchors and the fixed seated torso scale. Knees are optional setup evidence and do not gate repetitions. 60 ms time-based smoothing, 80 ms multi-frame transition debouncing, separate rise/return thresholds, and a previously risen-anchor return latch support continuous movement without endpoint pauses. Visibility, safe-zone, lateral/body-scale continuity, and tracking-loss protections remain active; a clipped head or shoulders can fall back to visible calibrated anchors.
 - Purple fast, green standard, and orange incomplete results; actual flowers in ordered pot frames, three-over-two layout, and a two-row partial-result layout for four completed flowers.
 - Result flowers use transparent last-frame stills bottom-anchored with pot-relative padding, with the foreground pot lip covering the stem tip.
@@ -248,6 +248,7 @@ Implemented:
 
 Verification performed during implementation:
 
+- Unique-flower selection (2026-10-23): lint, production build, and all 21 tracker/round tests passed. Automated checks cover all five flowers appearing exactly once even with repeated random values, fresh round state, completed-flower ordering, and partial results. Camera/video browser checks were not repeated for this selection-only change.
 - Camera-dialog redesign (2026-10-23): lint, production build, and all 11 Chromium browser tests passed. Added checks at 390 × 844, 1440 × 900, and 900 × 500 for contained dialog/buttons, no internal overflow, initial focus, Tab wrapping, Escape/close/Done dismissal, opener-focus restoration, retained safety acknowledgement, and denied-camera retry. Reviewed screenshots at all three sizes. A synthetic camera stream check confirmed the same live stream/video survives dialog dismissal, reopening on instructions, and transition to countdown without another camera request. Physical-camera calibration and real-person gameplay were not rechecked for this UI change.
 - `npm run lint`, `npm run build`, and `npm run test:tracking` (11 synthetic tracker/round tests).
 - Chromium checks with a synthetic camera stream and deterministic detector landmarks: first-checkbox startup, calibration, countdown, paused buds, standing playback, sitting advancement, all three results, order preservation, tracking loss, four-flower timeout layout, rejected-playback fallback, home during countdown, and cleared restart.

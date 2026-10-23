@@ -304,11 +304,11 @@ test('emits standing once per confirmed rise, never for jitter or a standing rec
   assert.equal(s.count(), 1)
 })
 
-test('round records actual flower order, permits duplicates, and advances only on completed cycles', () => {
+test('round records unique flower order and advances only on completed cycles', () => {
   const round = new FlowerRound()
   const choices = [0, 0.4, 0, 0.8, 0.6]
   round.start(1000, () => choices.shift())
-  assert.deepEqual(round.state.flowers, ['pink', 'violet', 'pink', 'yellow', 'orange'])
+  assert.deepEqual(round.state.flowers, ['pink', 'violet', 'purple', 'yellow', 'orange'])
   round.update(1100, 'completed')
   assert.deepEqual(round.state.completed, [])
   for (let i = 0; i < 5; i++) {
@@ -321,6 +321,17 @@ test('round records actual flower order, permits duplicates, and advances only o
   const frozen = round.state
   round.update(90000, 'completed')
   assert.equal(round.state, frozen)
+})
+
+test('every round selects all five flowers once even when random choices repeat', () => {
+  const round = new FlowerRound()
+  const expected = ['orange', 'pink', 'purple', 'violet', 'yellow']
+  for (const choice of [0, 0.2, 0.5, 0.999999]) {
+    const state = round.start(0, () => choice)
+    assert.equal(state.flowers.length, 5)
+    assert.deepEqual([...state.flowers].sort(), expected)
+    assert.deepEqual(state.completed, [])
+  }
 })
 
 test('deadline wins over a return to sitting at exactly 40 seconds; partial results exclude current bud', () => {
