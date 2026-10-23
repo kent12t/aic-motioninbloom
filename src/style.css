@@ -180,10 +180,38 @@ h1 .windsor { display: block; width: 125%; margin-left: -12.5%; }
 .camera-stage canvas { pointer-events: none; }
 .camera-message { position: absolute; bottom: 100%; left: 0; width: 100%; margin-bottom: 1cqw; border-radius: 1cqw; padding: .8cqw; color: var(--color-ink-purple); background: var(--color-background); font-size: 1.9cqw; line-height: 1.15; }
 .camera-hidden { visibility: hidden; pointer-events: none; }
-.camera-setup { left: auto; right: 5.8%; bottom: 17%; width: 40%; height: 35%; padding: 1cqw; background: var(--color-background); border: .25cqw solid var(--color-purple); border-radius: 2cqw; }
-.camera-setup .camera-stage { border-radius: 1.2cqw; }
-.camera-setup .camera-message { width: 100%; font-size: 2.5cqw; }
-.calibration-progress { position: absolute; bottom: -1.2cqw; left: 0; width: 100%; height: .7cqw; accent-color: var(--color-green); }
+.camera-dialog { display: block; position: static; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; overflow: visible; color: inherit; background: transparent; }
+.camera-setup .camera-dialog:not([open]) { display: none; }
+.camera-setup .camera-dialog { position: fixed; inset: 0; width: 88cqw; height: fit-content; max-height: min(164cqw, 94dvh); margin: auto; padding: 5cqw; overflow: auto; border: .35cqw solid var(--color-purple); border-radius: 5cqw; background: var(--color-background); }
+.camera-dialog::backdrop { background: rgb(53 19 68 / .55); }
+.camera-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 2cqw; margin-bottom: 4cqw; color: var(--color-purple); }
+.camera-dialog-eyebrow { margin-bottom: 1.2cqw; font-size: 2.4cqw; font-weight: 900; letter-spacing: .22cqw; }
+.camera-dialog-header h2 { margin: 0; font-size: 7cqw; font-weight: 400; line-height: 1.1; white-space: nowrap; }
+.camera-dialog-header .windsor { transform-origin: left center; margin-right: -20%; }
+.camera-dialog-close { display: grid; place-items: center; flex: 0 0 10cqw; width: 10cqw; height: 10cqw; padding: 2.8cqw; border: .25cqw solid var(--color-purple); border-radius: 50%; color: var(--color-purple); background: transparent; }
+.camera-dialog-close:hover { background: rgb(113 48 139 / .1); }
+.camera-dialog-close img { width: 100%; height: 100%; }
+.camera-setup .camera-stage { height: 62cqw; border-radius: 3cqw; background: var(--color-ink-purple); }
+.camera-unavailable { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw; color: var(--color-background); font-size: 3.5cqw; background: var(--color-ink-purple); }
+.camera-unavailable img { width: 14cqw; height: 14cqw; }
+.camera-dialog-status { margin-top: 4cqw; color: var(--color-purple); }
+.camera-dialog-status p { display: flex; align-items: center; gap: 1.8cqw; font-size: 3.6cqw; font-weight: 900; }
+.camera-status-dot { flex: 0 0 2cqw; width: 2cqw; height: 2cqw; border: .35cqw solid currentColor; border-radius: 50%; }
+.camera-status-ready { color: var(--color-green); }
+.camera-status-ready .camera-status-dot, .camera-status-error .camera-status-dot { background: currentColor; }
+.camera-status-error { color: var(--color-orange); }
+.calibration-progress { display: block; appearance: none; width: 100%; height: 1.3cqw; margin-top: 2cqw; border: 0; border-radius: 999px; overflow: hidden; background: rgb(113 48 139 / .14); accent-color: var(--color-purple); }
+.calibration-progress::-webkit-progress-bar { background: rgb(113 48 139 / .14); border-radius: 999px; }
+.calibration-progress::-webkit-progress-value { background: var(--color-purple); border-radius: 999px; }
+.calibration-progress::-moz-progress-bar { background: var(--color-purple); border-radius: 999px; }
+.camera-status-ready .calibration-progress { accent-color: var(--color-green); }
+.camera-status-ready .calibration-progress::-webkit-progress-value { background: var(--color-green); }
+.camera-status-ready .calibration-progress::-moz-progress-bar { background: var(--color-green); }
+.camera-dialog-guidance { margin-top: 3cqw; font-size: 3.8cqw; line-height: 1.3; }
+.camera-dialog-feedback { min-height: 8cqw; margin-top: 2cqw; font-size: 3.1cqw; line-height: 1.3; color: var(--color-ink-purple); overflow-wrap: anywhere; }
+.camera-dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 3cqw; margin-top: 4cqw; }
+.camera-done-button { position: static; min-width: 29cqw; }
+.camera-retry-button { min-height: 10.75cqw; padding: 0 4cqw; border: .3cqw solid var(--color-purple); border-radius: 999px; color: var(--color-purple); background: transparent; font-size: 3.6cqw; }
 .retry-camera { position: absolute; bottom: 1cqw; left: 10%; width: 80%; padding: 1.1cqw; border: 0; border-radius: 1cqw; background: var(--color-purple); color: var(--color-background); font-size: 2.8cqw; }
 .setup-status { position: absolute; z-index: 4; top: 83.25%; left: 10%; width: 80%; display: flex; justify-content: center; align-items: center; gap: 1cqw; color: var(--color-ink-purple); font-size: 1.9cqw; text-align: center; line-height: 1.1; }
 .setup-status p { max-width: 65%; }

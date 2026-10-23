@@ -79,6 +79,7 @@ All application assets must live under `public/`, including images, fonts, video
 | `/videos/*-bud.png`, `/videos/*-bloom.png` | Transparent first/last-frame video derivatives for posters and playback fallback |
 | `/videos/*-flower.png` | Cropped bloom derivatives for consistent result-pot composition |
 | `/home.svg` | Inconspicuous restart/home control |
+| `/close-camera.svg`, `/camera-unavailable.svg` | Setup-camera dialog close control and unavailable-camera illustration |
 | `/fonts/…` | Local fonts listed above |
 | `/mediapipe/…` | Local model and prepared WASM runtime; see `AGENTS.md` |
 
@@ -181,6 +182,8 @@ The QR destination has not been supplied. The current `GameQrCode` encodes `wind
 - Require all three acknowledgements to leave safety. Require a ready camera and valid seated calibration before starting the countdown; if still preparing, give concise guidance and allow camera retry when needed.
 - **Temporary debugging exception:** `GAME.requireCalibration` in `src/game/config.ts` is currently `false`. This keeps “Play now” enabled and bypasses the start/countdown calibration guards, even if the camera fails or calibration is incomplete, so later screens are accessible while debugging. Camera initialization, calibration feedback, and real pose-based repetition counting still run. Keep the gating feature: restore this flag to `true` to reinstate the intended readiness requirement above. Safety acknowledgements remain required.
 - Preserve the seated baseline across instructions and countdown. Do not require a separate standing calibration that conflicts with this flow.
+- “Check camera” / “Set up camera” opens a centered, stage-scaled modal with a light-yellow surface, purple border, Windsor heading, and a large undistorted live preview. Keep the close button inside its header; never float a separate hide/close control above the preview. Dim and block the background while open, contain keyboard focus, support Escape, and restore focus to the opener on dismissal.
+- Group seated-calibration status/progress below the preview, followed by concise shoulders-and-hips framing guidance. Show camera errors with a clear retry action. A “Done” button dismisses the check regardless of calibration readiness. Dismissal preserves the mounted video, stream, and background calibration; it does not stop the camera or advance the game.
 - Start the monotonic game timer when countdown ends. The round targets five complete **seated → standing → seated** cycles within 40 seconds.
 - Repetition detection is a forgiving game interaction, not a clinical movement assessment. A clear upward displacement of the calibrated head, shoulders, **or** hips is enough to confirm a rise; knee extension and simultaneous visibility of every joint are not required during play. Use the fixed seated torso scale for displacement thresholds.
 - Players may move continuously with **no deliberate pause at the top or bottom**. Short multi-frame debouncing and separated rise/return thresholds reject single-frame spikes and small bobs. Award one cycle only after a previously risen body anchor returns to its seated height (or lower); a deeper seat or modestly changed head position must not block a valid return. Prefer visible risen hips, then shoulders, then head for return evidence, so head bobs while the hips remain raised do not create extra cycles. Do not re-trigger the flower or award another cycle while the same rise remains in progress.
@@ -235,6 +238,7 @@ Implemented:
 
 - Local fonts and assets, exact brand palette, shared 80%-scaled Windsor treatment, fitted/centered 9:16 stage, and screen-specific floral opacity.
 - Safety acknowledgements with deferred camera startup/background calibration, illustrated instructions, readiness-gated countdown, and gameplay HUD/camera inset. An unobtrusive setup status and “Check camera” control expose framing/retry without blocking checkbox completion.
+- Setup-camera check uses a centered native modal with an integrated close button, large preview, grouped calibration feedback, framing guidance, retry, and Done. Background controls are inert while open; explicit Tab wrapping, Escape dismissal, and native opener-focus restoration support keyboard use. The same video remains mounted through setup and gameplay.
 - Confirmed stand events start the current transparent WebM; seated returns score and advance. `FlowerRound` preserves the selected/completed order, enforces the deadline, and prevents late events from mutating results. Rejected playback uses corresponding stills without affecting counting.
 - Post-calibration vertical displacement uses independent head/shoulder/hip anchors and the fixed seated torso scale. Knees are optional setup evidence and do not gate repetitions. 60 ms time-based smoothing, 80 ms multi-frame transition debouncing, separate rise/return thresholds, and a previously risen-anchor return latch support continuous movement without endpoint pauses. Visibility, safe-zone, lateral/body-scale continuity, and tracking-loss protections remain active; a clipped head or shoulders can fall back to visible calibrated anchors.
 - Purple fast, green standard, and orange incomplete results; actual flowers in ordered pot frames, three-over-two layout, and a two-row partial-result layout for four completed flowers.
@@ -244,6 +248,7 @@ Implemented:
 
 Verification performed during implementation:
 
+- Camera-dialog redesign (2026-10-23): lint, production build, and all 11 Chromium browser tests passed. Added checks at 390 × 844, 1440 × 900, and 900 × 500 for contained dialog/buttons, no internal overflow, initial focus, Tab wrapping, Escape/close/Done dismissal, opener-focus restoration, retained safety acknowledgement, and denied-camera retry. Reviewed screenshots at all three sizes. A synthetic camera stream check confirmed the same live stream/video survives dialog dismissal, reopening on instructions, and transition to countdown without another camera request. Physical-camera calibration and real-person gameplay were not rechecked for this UI change.
 - `npm run lint`, `npm run build`, and `npm run test:tracking` (11 synthetic tracker/round tests).
 - Chromium checks with a synthetic camera stream and deterministic detector landmarks: first-checkbox startup, calibration, countdown, paused buds, standing playback, sitting advancement, all three results, order preservation, tracking loss, four-flower timeout layout, rejected-playback fallback, home during countdown, and cleared restart.
 - Screenshot review of safety states, instructions, countdown, gameplay, and result variants; fitted/centered stage checks at portrait, desktop, and short viewport sizes.
@@ -263,7 +268,6 @@ Remaining verification/integration:
 
 - Temporary screen-debugging bypass is active (`GAME.requireCalibration: false`). Restore to `true` when finished debugging to re-enable the existing Play now/countdown readiness gates.
 - Real-person USB-camera checks cover the initial normalization fix and continuous-motion counting. Broader calibration/repetition accuracy across participants and camera positions, live tracking-loss recovery, live head-out-of-frame movement, and sustained video performance still need checking on the intended booth hardware.
-- The expanded setup-camera preview can overlap safety copy/controls at the desktop test size; its setup placement still needs adjustment to preserve readable acknowledgements.
 - The QR still links to the current page; the approved “read more” URL remains unspecified.
 
 Update this section as changes land; keep the normative requirements above intact unless the user changes them.

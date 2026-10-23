@@ -30,12 +30,12 @@ export function App() {
       <CameraView videoRef={camera.attachVideo} overlayRef={camera.overlayRef}
         hidden={!cameraEnabled || screen === 'results' || (preparing && !showSetup)} setup={preparing}
         message={cameraMessage} showMessage={!tracking.accepted || camera.status !== 'ready'} calibrationProgress={preparing ? tracking.progress : undefined}
-        error={camera.error} onRetry={game.retryCamera} />
+        error={camera.error} onRetry={game.retryCamera} onClose={() => setShowSetup(false)} ready={ready} />
 
       {preparing && cameraEnabled && <div className="setup-status">
         <p role="status">{camera.error ? 'Camera needs attention.' : ready ? 'Seated position ready.' : cameraMessage}</p>
-        <button onClick={() => setShowSetup((value) => !value)} aria-expanded={showSetup}>
-          {showSetup ? 'Hide camera' : camera.error ? 'Set up camera' : 'Check camera'}
+        <button onClick={() => setShowSetup(true)} aria-haspopup="dialog" aria-controls="setup-camera-dialog" aria-expanded={showSetup}>
+          {camera.error ? 'Set up camera' : 'Check camera'}
         </button>
       </div>}
       {screen !== 'safety' && <button className="home-button" onClick={restart} aria-label="Return to safety check" title="Return to safety check">
