@@ -66,9 +66,18 @@ test('camera stream and video persist through setup dialog and countdown', async
   test.setTimeout(90_000)
   await page.addInitScript(() => {
     window.cameraAttempts = 0
+    window.processedCameraFrames = 0
+    const clearRect = CanvasRenderingContext2D.prototype.clearRect
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.matches('.camera-stage canvas') && args[0] === 0 && args[1] === 0) {
+        window.processedCameraFrames += 1
+      }
+      return clearRect.apply(this, args)
+    }
     navigator.mediaDevices.getUserMedia = async () => {
       window.cameraAttempts += 1
       const canvas = document.createElement('canvas')
+      window.cameraCanvas = canvas
       canvas.width = 720
       canvas.height = 1280
       const context = canvas.getContext('2d')
@@ -87,7 +96,18 @@ test('camera stream and video persist through setup dialog and countdown', async
     timeout: 60_000,
     message: 'the real local MediaPipe detector should process a camera frame',
   }).toBe(720)
-  await page.evaluate(() => { window.originalVideo = document.querySelector('.camera-stage video') })
+  // Background calibration must keep receiving new frames with the dialog closed.
+  const initialFrames = await page.evaluate(() => window.processedCameraFrames)
+  await page.evaluate(() => {
+    const context = window.cameraCanvas.getContext('2d')
+    context.fillStyle = '#ee3d23'
+    context.fillRect(0, 0, 20, 20)
+  })
+  await expect.poll(() => page.evaluate(() => window.processedCameraFrames)).toBeGreaterThan(initialFrames)
+  await page.evaluate(() => {
+    window.originalVideo = document.querySelector('.camera-stage video')
+    window.firstInferenceVideoTime = window.originalVideo.currentTime
+  })
   await page.getByRole('button', { name: 'Check camera' }).click()
   await expect(page.getByRole('dialog', { name: 'Check your camera' })).toBeVisible()
   await page.getByRole('button', { name: 'Done', exact: true }).click()
@@ -104,4 +124,20 @@ test('camera stream and video persist through setup dialog and countdown', async
     trackState: window.cameraStream.getVideoTracks()[0].readyState,
     attempts: window.cameraAttempts,
   }))).toEqual({ sameVideo: true, sameStream: true, trackState: 'live', attempts: 1 })
+  // The static canvas stops producing frames while the live clock advances.
+  // Allow one initial inference before decoded-frame counters become available.
+  await expect.poll(() => page.evaluate(() => window.originalVideo.currentTime - window.firstInferenceVideoTime)).toBeGreaterThan(0.1)
+  const frames = await page.evaluate(() => ({
+    processed: window.processedCameraFrames,
+    decoded: window.originalVideo.getVideoPlaybackQuality().totalVideoFrames,
+  }))
+  expect(frames.processed).toBeLessThanOrEqual(frames.decoded + 1)
+
+  // A genuinely new source frame must still be processed after deduplication.
+  await page.evaluate(() => {
+    const context = window.cameraCanvas.getContext('2d')
+    context.fillStyle = '#71308b'
+    context.fillRect(0, 0, 20, 20)
+  })
+  await expect.poll(() => page.evaluate(() => window.processedCameraFrames)).toBeGreaterThan(frames.processed)
 })

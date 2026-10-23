@@ -31,7 +31,7 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     let stream: MediaStream | null = null
     let detector: Awaited<ReturnType<typeof createPoseDetector>> | null = null
     let lastInference = -Infinity
-    let lastVideoTime = -1
+    let lastVideoFrame = ''
     let lastMissingReport = -Infinity
     const input = document.createElement('canvas')
     const fail = (cause: unknown) => {
@@ -48,11 +48,16 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     const animate = (now: number) => {
       if (!active) return
       const video = videoRef.current
+      // A live stream's media clock can advance without a new camera frame
+      // (for example, a static canvas capture). Do not infer the same decoded
+      // frame on every animation tick, especially with software-only WebGL.
+      const decodedFrames = video?.getVideoPlaybackQuality?.().totalVideoFrames ?? 0
+      const videoFrame = decodedFrames > 0 ? `frame:${decodedFrames}` : `time:${video?.currentTime}`
       if (video && detector && video.readyState >= 2 && video.videoWidth
-        && now - lastInference >= 1000 / TRACKING.fps && video.currentTime !== lastVideoTime) {
+        && now - lastInference >= 1000 / TRACKING.fps && videoFrame !== lastVideoFrame) {
         try {
           lastInference = now
-          lastVideoTime = video.currentTime
+          lastVideoFrame = videoFrame
           maskCameraFrame(video, input)
           const result = detector.detectForVideo(input, now)
           const points = result.landmarks[0]?.map(({ x, y, visibility }) => ({

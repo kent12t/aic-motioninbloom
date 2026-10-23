@@ -96,7 +96,7 @@ npm run test:smoke
 
 These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. They are pre-deployment gates, not automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
 
-The camera-persistence smoke test uses the real local MediaPipe detector with a synthetic camera stream. Chromium explicitly uses SwiftShader software WebGL so hosted runners do not need a physical GPU. This test has a 90-second budget and waits up to 60 seconds for successful first-frame inference before checking dialog/countdown continuity; other smoke tests retain their 30-second budget.
+The camera-persistence smoke test uses the real local MediaPipe detector with a synthetic camera stream. Chromium explicitly uses SwiftShader software WebGL so hosted runners do not need a physical GPU. This test has a 90-second budget and waits up to 60 seconds for successful first-frame inference before checking dialog/countdown continuity; other smoke tests retain their 30-second budget. It also checks that a static stream is not repeatedly inferred merely because its media clock advances, and that new camera frames are processed both during background setup and countdown.
 
 ## Tracking and booth setup
 
