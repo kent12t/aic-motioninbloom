@@ -61,6 +61,9 @@ for (const viewport of [
 }
 
 test('camera stream and video persist through setup dialog and countdown', async ({ page }) => {
+  // Real model initialization/inference can block the page on software-only CI.
+  // Keep the normal smoke-test budget for the other tests.
+  test.setTimeout(90_000)
   await page.addInitScript(() => {
     window.cameraAttempts = 0
     navigator.mediaDevices.getUserMedia = async () => {
@@ -78,6 +81,12 @@ test('camera stream and video persist through setup dialog and countdown', async
   await page.goto('/')
   await page.getByRole('checkbox').first().check()
   await expect.poll(() => page.locator('.camera-stage video').evaluate((video) => video.readyState)).toBeGreaterThanOrEqual(2)
+  // The guide is resized only after detectForVideo succeeds. Video readiness
+  // alone does not prove that the asynchronous detector has initialized.
+  await expect.poll(() => page.locator('.camera-stage canvas').evaluate((canvas) => canvas.width), {
+    timeout: 60_000,
+    message: 'the real local MediaPipe detector should process a camera frame',
+  }).toBe(720)
   await page.evaluate(() => { window.originalVideo = document.querySelector('.camera-stage video') })
   await page.getByRole('button', { name: 'Check camera' }).click()
   await expect(page.getByRole('dialog', { name: 'Check your camera' })).toBeVisible()

@@ -53,18 +53,33 @@ Production: **https://aic-motioninbloom.pages.dev** (Pages project `aic-motionin
 
 The deploy job depends on successful checks and uploads the **same `dist/` artifact** that passed them. Pull requests never receive deployment credentials or deploy. Production publishes are serialized, and the job rejects a commit if `master` has moved before publishing. Failed checks leave the current live deployment in place and mark the GitHub run as failed; they do not revert the Git commit. Browser failures retain screenshots/traces for seven days.
 
-#### One-time GitHub setup
+#### One-time Cloudflare and GitHub setup
 
-In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets (or secrets on its `production` environment):
+1. **Create the Pages project if it does not exist.** Use a Direct Upload project, since GitHub Actions builds and uploads the checked artifact. From a local terminal, run:
 
-| Secret | Value |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | A Cloudflare API token with **Account → Cloudflare Pages → Edit**, restricted to the account containing this project |
-| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID containing `aic-motioninbloom` |
+   ```sh
+   npx wrangler@4.151.3 login
+   npx wrangler@4.151.3 pages project create aic-motioninbloom --production-branch master
+   ```
 
-Create the token in Cloudflare under **My Profile → API Tokens → Create Token → Custom token**. A local Wrangler browser login does not authenticate GitHub Actions. Keep Pages' separate Git-triggered builds disabled so publishing goes through this workflow's checks.
+   Choose the Cloudflare account that will host the game. If `aic-motioninbloom` already exists, use that project and confirm its production branch is `master`. Keep Pages' separate Git-triggered builds disabled so publishing goes through this workflow's checks.
 
-Commit and push the workflow and lockfile to `master` to activate it. To also block merging failing pull requests, configure GitHub branch protection/rulesets for `master` to require the **Production checks** status. The workflow itself already blocks deployment when checks fail.
+2. **Copy the account ID** from that account's Cloudflare dashboard (account overview / account menu → **Copy account ID**). Use the account ID, not a domain's zone ID. A custom domain is not required for the `pages.dev` site.
+
+3. **Create a Cloudflare API token.** Under **My Profile → API Tokens → Create Token → Custom token**, grant **Account → Cloudflare Pages → Edit** and restrict account resources to the account containing the project. Copy the token when it is shown.
+
+4. **Add the credentials to GitHub.** In this repository's **Settings → Environments**, create/select **production** (the exact environment name used by the workflow), then add these **environment secrets**. Repository secrets under **Settings → Secrets and variables → Actions** also work.
+
+   | Secret | Value |
+   | --- | --- |
+   | `CLOUDFLARE_API_TOKEN` | A Cloudflare API token with **Account → Cloudflare Pages → Edit**, restricted to the account containing this project |
+   | `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID containing `aic-motioninbloom` |
+
+5. **Run the updated workflow on `master`.** After the fix is committed and pushed, open **Actions → Check and deploy Pages → Run workflow**, select `master`, and run it (the push also starts a run automatically). Confirm both **Production checks** and **Deploy production** succeed, then open the URL printed by Wrangler. The expected URL is `https://aic-motioninbloom.pages.dev`; Cloudflare can assign a suffixed hostname if that name is unavailable, in which case update the documented URL and workflow environment URL to match.
+
+A local Wrangler browser login does not authenticate GitHub Actions. These deployment credentials belong in GitHub secrets; no Cloudflare runtime environment variables are needed by this static app. The workflow reports missing secrets in **Validate deployment credentials**. Re-running an older failed run uses its old test code, so use the updated `master` commit.
+
+To also block merging failing pull requests, configure GitHub branch protection/rulesets for `master` to require the **Production checks** status. The workflow itself already blocks deployment when checks fail.
 
 To run the same checks locally:
 
@@ -80,6 +95,8 @@ npm run test:smoke
 ```
 
 These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. They are pre-deployment gates, not automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
+
+The camera-persistence smoke test uses the real local MediaPipe detector with a synthetic camera stream. Chromium explicitly uses SwiftShader software WebGL so hosted runners do not need a physical GPU. This test has a 90-second budget and waits up to 60 seconds for successful first-frame inference before checking dialog/countdown continuity; other smoke tests retain their 30-second budget.
 
 ## Tracking and booth setup
 
