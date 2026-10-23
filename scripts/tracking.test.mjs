@@ -71,10 +71,31 @@ test('brief jitter and low-confidence landmarks never complete a stand', () => {
   s.feed(pose(true), 100)
   s.feed(pose(), 1000)
   const obscured = pose(true)
-  obscured[23].visibility = 0.2
+  for (const p of obscured) p.visibility = 0.2
   s.feed(obscured, 1000)
   s.feed(pose(), 1000)
   assert.equal(s.count(), 0)
+})
+test('counts full stands when the seated torso is foreshortened by the camera angle', () => {
+  const s = session()
+  // Representative USB-camera geometry: the projected torso grows from .196
+  // seated to .30 upright, while the hip-to-knee distance grows from .088 to .20.
+  const seated = pose()
+  for (const i of [11, 12]) seated[i].y = 0.444
+  for (const i of [23, 24]) seated[i].y = 0.64
+  for (const i of [25, 26]) seated[i].y = 0.728
+  const standing = pose(true)
+  for (const i of [11, 12]) standing[i].y = 0.20
+  for (const i of [23, 24]) standing[i].y = 0.50
+  for (const i of [25, 26]) standing[i].y = 0.70
+  assert.equal(s.feed(seated, 2000, false).ready, true)
+  for (let cycle = 1; cycle <= 5; cycle++) {
+    s.feed(standing, 1200)
+    assert.equal(s.stands(), cycle)
+    assert.equal(s.count(), cycle - 1)
+    s.feed(seated, 1200)
+    assert.equal(s.count(), cycle)
+  }
 })
 test('tracking loss discards an unfinished repetition and requires sitting again', () => {
   const s = session()
@@ -99,19 +120,20 @@ test('a sudden lateral replacement is rejected and cannot finish an old repetiti
   assert.equal(s.feed(pose(true), 1000, false).ready, false)
 })
 
-test('hip movement alone or knee-gap change alone does not count as standing', () => {
+test('clear vertical body movement is enough; knee movement alone cannot add a cycle', () => {
   const s = session()
   s.feed(pose(), 2000, false)
   const lifted = pose()
   for (const p of lifted) p.y -= 0.15
   s.feed(lifted, 1000)
   s.feed(pose(), 1000)
+  assert.equal(s.count(), 1)
   const kneeOnly = pose()
   kneeOnly[25].y = 0.9
   kneeOnly[26].y = 0.9
   s.feed(kneeOnly, 1000)
   s.feed(pose(), 1000)
-  assert.equal(s.count(), 0)
+  assert.equal(s.count(), 1)
 })
 
 test('large scale changes and non-finite landmarks are rejected', () => {
@@ -122,9 +144,144 @@ test('large scale changes and non-finite landmarks are rejected', () => {
   scaled[12].y = 0.15
   assert.equal(s.feed(scaled, 1000).accepted, false)
   const corrupt = pose()
-  corrupt[23].visibility = NaN
+  for (const p of corrupt) p.visibility = NaN
   assert.equal(s.feed(corrupt, 1000).accepted, false)
   assert.equal(s.count(), 0)
+})
+
+function motionPose(rise, { clipped = false, headOnly = false } = {}) {
+  const points = pose()
+  points[0].y = 0.32 - 0.24 * rise
+  for (const i of [11, 12]) points[i].y = 0.444 - 0.244 * rise
+  for (const i of [23, 24]) points[i].y = 0.64 - 0.14 * rise
+  for (const i of [25, 26]) points[i].y = 0.728 - 0.028 * rise
+  if (clipped) {
+    // Actual out-of-zone head/shoulders, plus unreliable knees, not just absent dots.
+    for (const i of [0, 11, 12]) { points[i].y = -0.05; points[i].visibility = 0.99 }
+    for (const i of [25, 26]) points[i].visibility = 0.1
+  }
+  if (headOnly) for (const i of [11, 12, 23, 24, 25, 26]) points[i].visibility = 0.1
+  return points
+}
+
+test('five continuous triangular cycles count once each without endpoint pauses', () => {
+  for (const period of [800, 1200, 2000]) {
+    const s = session()
+    s.feed(motionPose(0), 2000, false)
+    for (let cycle = 0; cycle < 5; cycle++) {
+      for (let t = 50; t <= period; t += 50) {
+        const rise = 1 - Math.abs(2 * t / period - 1)
+        s.feed(motionPose(rise), 50)
+      }
+    }
+    s.feed(motionPose(0), 200)
+    assert.equal(s.stands(), 5, `stands at ${period}ms/cycle`)
+    assert.equal(s.count(), 5, `completed cycles at ${period}ms/cycle`)
+  }
+})
+
+test('head rise alone can count after calibration without visible knees or torso', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  for (let cycle = 1; cycle <= 5; cycle++) {
+    s.feed(motionPose(1, { headOnly: true }), 400)
+    s.feed(motionPose(0, { headOnly: true }), 400)
+    assert.equal(s.count(), cycle)
+    assert.equal(s.stands(), cycle)
+  }
+})
+
+test('head/shoulders leaving the top of frame and missing knees do not lose the stand', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  s.feed(motionPose(1, { clipped: true }), 500)
+  assert.equal(s.stands(), 1)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(0), 500)
+  assert.equal(s.count(), 1)
+})
+
+test('small bobs, a single-frame jump, and threshold chatter never overcount', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  for (let i = 0; i < 40; i++) s.feed(motionPose(i % 2 ? 0.12 : 0), 50)
+  s.feed(motionPose(1), 50)
+  s.feed(motionPose(0), 500)
+  assert.equal(s.stands(), 0)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(1), 400)
+  for (let i = 0; i < 40; i++) s.feed(motionPose(i % 2 ? 0.8 : 0.6), 50)
+  assert.equal(s.stands(), 1)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(0), 400)
+  s.feed(motionPose(0), 1000)
+  assert.equal(s.count(), 1)
+})
+
+test('losing the risen anchor cannot turn an unrelated seated-height anchor into a return', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  const hipRise = motionPose(0)
+  for (const i of [11, 12]) hipRise[i].visibility = 0.1
+  for (const i of [23, 24]) hipRise[i].y -= 0.14
+  s.feed(hipRise, 400)
+  assert.equal(s.stands(), 1)
+  s.feed(motionPose(0, { headOnly: true }), 400)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(0), 400)
+  assert.equal(s.count(), 1)
+})
+
+test('a lower seated return or a different head position does not block the next cycle', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  s.feed(motionPose(1), 400)
+  const deepSeat = motionPose(0)
+  for (const p of deepSeat) p.y += 0.06
+  s.feed(deepSeat, 400)
+  assert.equal(s.count(), 1)
+  s.feed(motionPose(1), 400)
+  const uprightSeat = motionPose(0)
+  uprightSeat[0].y -= 0.1
+  s.feed(uprightSeat, 400)
+  assert.equal(s.count(), 2)
+  assert.equal(s.stands(), 2)
+})
+
+test('head bobs while the tracked hips stay raised cannot complete or rearm cycles', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  s.feed(motionPose(1), 400)
+  const bowedHead = motionPose(1)
+  bowedHead[0].y = motionPose(0)[0].y
+  for (let i = 0; i < 5; i++) {
+    s.feed(bowedHead, 300)
+    s.feed(motionPose(1), 300)
+  }
+  assert.equal(s.stands(), 1)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(0), 400)
+  assert.equal(s.count(), 1)
+})
+
+test('short occlusions cannot confirm transitions; long loss requires a fresh seated return', () => {
+  const s = session()
+  s.feed(motionPose(0), 2000, false)
+  for (let i = 0; i < 10; i++) {
+    s.feed(motionPose(1), 50)
+    s.feed(null, 50)
+  }
+  s.feed(motionPose(0), 400)
+  assert.equal(s.count(), 0)
+  assert.equal(s.stands(), 0)
+  s.feed(motionPose(1), 400)
+  s.feed(null, 1000)
+  s.feed(motionPose(1), 400)
+  s.feed(motionPose(0), 400)
+  assert.equal(s.count(), 0)
+  s.feed(motionPose(1), 400)
+  s.feed(motionPose(0), 400)
+  assert.equal(s.count(), 1)
 })
 
 test('emits standing once per confirmed rise, never for jitter or a standing recovery after loss', () => {

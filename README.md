@@ -83,12 +83,13 @@ These checks do not certify real-person tracking, WebM alpha appearance, or boot
 
 ## Tracking and booth setup
 
-- Center the chair and camera. Frame the participant's shoulders, hips, and knees while both seated and standing, leaving headroom for standing.
+- Center the chair and camera. Frame shoulders and hips while seated for calibration. Aim to keep the hips visible throughout movement; the head/shoulders may leave the top of the image when standing. Knees are useful setup evidence, but are not required for repetition counting.
 - The central 60% of the image is the safe zone. Pixels outside it are blacked out **before inference**, not just hidden in the preview. A guide shows the same boundary.
 - Sit still for 1.5 seconds to establish a seated baseline, then press **Play now** after reading the instructions. Return home and recheck the safety options to recalibrate after moving the chair or camera.
 - Detection runs at up to 20 FPS on a 640-pixel-wide input. The timer runs independently of inference.
-- Confidence filtering, time-based smoothing, two movement signals (hip/knee gap and hip rise relative to the seated torso), and 350 ms posture holds reject jitter and incomplete movement.
-- A repetition requires a confirmed sitting → standing → sitting sequence. Tracking loss of 800 ms discards the pending repetition; return to sitting to resume. The 40-second timer continues during loss.
+- Clear vertical movement of the calibrated head, shoulders, or hips can confirm a rise, normalized to the seated torso scale. This is a forgiving game interaction rather than a clinical movement assessment. Players can keep moving naturally without pausing at either end.
+- Confidence filtering, 60 ms smoothing, 80 ms multi-frame confirmation, and separate rise/return thresholds reject small bobs and single-frame jumps. A cycle scores only when a previously risen body anchor returns to seated height (or lower); missing landmarks alone cannot score. A deeper seat or changed head position does not block a valid return.
+- A repetition requires a confirmed sitting → standing → sitting sequence. Losing all usable calibrated anchors for 800 ms discards the pending repetition; return to sitting to resume. Clipping only the head/shoulders does not interrupt counting while another calibrated anchor remains usable. The 40-second timer continues during loss.
 - Position/body-scale continuity checks reject obvious player changes. This is not biometric identity tracking: a person directly crossing or replacing the player inside the zone can still interfere. Keep that physical area clear.
 - Tune zone/thresholds in `src/game/config.ts` and `src/game/sitStandTracker.ts` using the actual camera and representative participants. Automated tests exercise synthetic poses, not real-world detection accuracy.
 

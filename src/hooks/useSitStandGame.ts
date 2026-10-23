@@ -7,7 +7,7 @@ import { usePoseCamera } from './usePoseCamera'
 
 export type GameScreen = 'safety' | 'instructions' | 'countdown' | 'playing' | 'results'
 const initialTracking: TrackingFeedback = {
-  ready: false, progress: 0, message: 'Sit inside the guide with shoulders, hips and knees visible.',
+  ready: false, progress: 0, message: 'Sit inside the guide with shoulders and hips visible.',
   accepted: false, repetition: false, stood: false,
 }
 
