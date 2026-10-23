@@ -235,7 +235,7 @@ h1 .windsor { display: block; width: 125%; margin-left: -12.5%; }
 /* Anchor the last-frame still above the pot base; the front lip hides its stem tip. */
 .result-flower { position: absolute; width: 84%; height: 71%; bottom: var(--flower-bottom-padding); left: 8%; object-fit: contain; object-position: center bottom; }
 .flower-pot-front { clip-path: inset(86% 0 0); pointer-events: none; }
-.result-message { position: absolute; top: 59.05%; left: 11.5%; width: 77%; font-size: 3.33cqw; line-height: 1.2; text-align: justify; text-align-last: center; }
+.result-message { position: absolute; top: 59.05%; left: 11.5%; width: 77%; font-size: 3.33cqw; line-height: 1.2; text-align: center; text-wrap: pretty; }
 .qr-block { position: absolute; top: 68.1%; left: 32.6%; width: 35%; height: 12cqw; display: flex; align-items: center; gap: 1cqw; color: var(--color-purple); }
 .qr-code { width: 14cqw; height: 14cqw; flex: 0 0 14cqw; image-rendering: pixelated; }
 .qr-block p { font-size: 3.1cqw; line-height: 1.05; white-space: nowrap; }
