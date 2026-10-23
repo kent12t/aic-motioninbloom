@@ -40,6 +40,47 @@ Serve the generated `dist/` directory with a local static server for the booth. 
 
 The QR currently links to the current URL, so a localhost booth URL will not open the game on a visitor's phone.
 
+### Automatic production deployment (Cloudflare Pages)
+
+Production: **https://aic-motioninbloom.pages.dev** (Pages project `aic-motioninbloom`, production branch `master`).
+
+`.github/workflows/deploy-pages.yml` checks pull requests targeting `master` and every push to `master`. It can also be run manually from the Actions tab; only `master` can deploy. All of these must pass before production is invoked:
+
+1. Locked dependency installation (`npm ci`) and `npm audit --audit-level=high` (includes development dependencies).
+2. ESLint with zero warnings, synthetic tracker/round tests, and the TypeScript/Vite production build.
+3. Required asset presence, exact copying of public assets, and Pages file-count/25 MiB per-file limits.
+4. Chromium smoke tests against **the built site**: startup, safety acknowledgements, instructions, denied-camera feedback, restart, local fonts/images, binary detector asset delivery, and decoding/playback of all five WebMs.
+
+The deploy job depends on successful checks and uploads the **same `dist/` artifact** that passed them. Pull requests never receive deployment credentials or deploy. Production publishes are serialized, and the job rejects a commit if `master` has moved before publishing. Failed checks leave the current live deployment in place and mark the GitHub run as failed; they do not revert the Git commit. Browser failures retain screenshots/traces for seven days.
+
+#### One-time GitHub setup
+
+In the repository's **Settings → Secrets and variables → Actions**, add these repository secrets (or secrets on its `production` environment):
+
+| Secret | Value |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | A Cloudflare API token with **Account → Cloudflare Pages → Edit**, restricted to the account containing this project |
+| `CLOUDFLARE_ACCOUNT_ID` | The Cloudflare account ID containing `aic-motioninbloom` |
+
+Create the token in Cloudflare under **My Profile → API Tokens → Create Token → Custom token**. A local Wrangler browser login does not authenticate GitHub Actions. Keep Pages' separate Git-triggered builds disabled so publishing goes through this workflow's checks.
+
+Commit and push the workflow and lockfile to `master` to activate it. To also block merging failing pull requests, configure GitHub branch protection/rulesets for `master` to require the **Production checks** status. The workflow itself already blocks deployment when checks fail.
+
+To run the same checks locally:
+
+```sh
+npm ci
+npm audit --audit-level=high
+npm run lint -- --max-warnings=0
+npm run test:tracking
+npm run build
+npm run check:dist
+npx playwright install chromium
+npm run test:smoke
+```
+
+These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. They are pre-deployment gates, not automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
+
 ## Tracking and booth setup
 
 - Center the chair and camera. Frame the participant's shoulders, hips, and knees while both seated and standing, leaving headroom for standing.

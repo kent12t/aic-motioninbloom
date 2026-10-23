@@ -11,6 +11,7 @@
 - Checks: `npm run lint` and `npm run build`. Build runs `tsc` (no emit, all of `src`) before Vite; even unused legacy source must typecheck. Output is ignored `dist/`.
 - Focused checks: `npx eslint src/path/to/file.tsx`; typecheck only with `npx tsc --noEmit`.
 - `npm run test:tracking` runs synthetic tracker tests with Node's built-in test runner. Browser checks are still needed for camera initialization, calibration, countdown, repetitions, tracking loss, timeout/results, and restart.
+- `.github/workflows/deploy-pages.yml` gates Pages production (`master`) on audit, warning-free lint, tracker tests, build, `npm run check:dist`, and Chromium `npm run test:smoke`. Browser smoke tests use the built `dist/` via Vite preview; install Chromium with `npx playwright install chromium` locally. Deployment uses the checked artifact and requires GitHub Cloudflare secrets; see `README.md`.
 
 ## Active architecture
 - Entry flow: `index.html` → `src/main.tsx` → `src/App.tsx` → `src/hooks/useSitStandGame.ts`. Global styles are imported by `main.tsx` from `src/style.css`.

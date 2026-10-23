@@ -6,6 +6,8 @@
   "scripts": {
     "prepare:pose": "node scripts/prepare-pose-assets.mjs",
     "test:tracking": "node --test scripts/tracking.test.mjs",
+    "test:smoke": "playwright test",
+    "check:dist": "node scripts/check-dist.mjs",
     "predev": "npm run prepare:pose",
     "dev": "vite",
     "prebuild": "npm run prepare:pose",
@@ -15,6 +17,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "@playwright/test": "^1.64.1",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

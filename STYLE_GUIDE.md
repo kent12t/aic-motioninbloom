@@ -248,6 +248,11 @@ Verification performed during implementation:
 - Temporary calibration-bypass check: with a failed camera, `requireCalibration: false` permits Play now → countdown → gameplay → timeout; a browser-only `true` override restores disabled-button and start-handler gating. Safety acknowledgements stay required. Lint, build, and all 11 tracker/round tests passed after this change.
 - Zero-completion empty-pot update: browser timeout check verified exactly one centered empty pot, no flower overlay, and “You have completed 0 sets”; screenshot reviewed. Lint and production build passed.
 
+Deployment automation:
+
+- GitHub Actions checks pull requests and `master` pushes before publishing the verified build artifact to Cloudflare Pages. Gates include dependency audit, zero-warning lint, tracker/round tests, typecheck/build, required assets/Pages limits, and Chromium production smoke tests. Smoke coverage is limited to startup/setup/restart, asset delivery, and WebM decoding/playback; it does not replace the camera-enabled and real-person verification above. Activation requires the workflow to be pushed and Cloudflare secrets configured in GitHub; see `README.md`.
+- Local pipeline verification: locked install, dependency audit (zero reported vulnerabilities), zero-warning lint, all 11 tracker/round tests, production build, asset checks, and all seven Chromium smoke tests passed. A temporary missing-build-asset probe correctly failed the asset gate. Workflow YAML and job/artifact ordering were reviewed locally; a hosted Actions run remains pending activation.
+
 Remaining verification/integration:
 
 - Temporary screen-debugging bypass is active (`GAME.requireCalibration: false`). Restore to `true` when finished debugging to re-enable the existing Play now/countdown readiness gates.
