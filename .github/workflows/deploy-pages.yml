@@ -32,18 +32,6 @@ jobs:
         run: npm run build
       - name: Check required assets and Pages limits
         run: npm run check:dist
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-      - name: Browser smoke tests against production build
-        run: npm run test:smoke
-      - name: Save browser failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-diagnostics
-          path: test-results/
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Save verified deployment artifact
         uses: actions/upload-artifact@v4
         with:

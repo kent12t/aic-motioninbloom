@@ -49,9 +49,14 @@ Production: **https://aic-motioninbloom.pages.dev** (Pages project `aic-motionin
 1. Locked dependency installation (`npm ci`) and `npm audit --audit-level=high` (includes development dependencies).
 2. ESLint with zero warnings, synthetic tracker/round tests, and the TypeScript/Vite production build.
 3. Required asset presence, exact copying of public assets, and Pages file-count/25 MiB per-file limits.
-4. Chromium smoke tests against **the built site**: startup, safety acknowledgements, instructions, denied-camera feedback, restart, local fonts/images, binary detector asset delivery, and decoding/playback of all five WebMs.
 
-The deploy job depends on successful checks and uploads the **same `dist/` artifact** that passed them. Pull requests never receive deployment credentials or deploy. Production publishes are serialized, and the job rejects a commit if `master` has moved before publishing. Failed checks leave the current live deployment in place and mark the GitHub run as failed; they do not revert the Git commit. Browser failures retain screenshots/traces for seven days.
+The deploy job depends on successful checks and uploads the **same `dist/` artifact** that passed them. Pull requests never receive deployment credentials or deploy. Production publishes are serialized, and the job rejects a commit if `master` has moved before publishing. Failed checks leave the current live deployment in place and mark the GitHub run as failed; they do not revert the Git commit. Normal deployment checks do not install Chromium or its system dependencies.
+
+#### Manual browser checks
+
+Run Playwright when needed from **Actions → Browser smoke tests (manual) → Run workflow**, selecting the branch to check. `.github/workflows/browser-smoke.yml` only runs on manual dispatch; it builds that branch and tests **the built site** through Vite preview. It neither deploys nor blocks the production workflow, and does not use Cloudflare credentials.
+
+Coverage includes startup, safety acknowledgements, instructions, camera-dialog accessibility and stream continuity, denied-camera feedback, restart, local fonts/images, binary detector asset delivery, and decoding/playback of all five WebMs. Browser failures retain screenshots/traces for seven days. Chromium/system-dependency installation and browser tests consume runner time only when this workflow is explicitly started.
 
 #### One-time Cloudflare and GitHub setup
 
@@ -81,7 +86,7 @@ A local Wrangler browser login does not authenticate GitHub Actions. These deplo
 
 To also block merging failing pull requests, configure GitHub branch protection/rulesets for `master` to require the **Production checks** status. The workflow itself already blocks deployment when checks fail.
 
-To run the same checks locally:
+To run the automatic deployment checks locally:
 
 ```sh
 npm ci
@@ -90,11 +95,16 @@ npm run lint -- --max-warnings=0
 npm run test:tracking
 npm run build
 npm run check:dist
+```
+
+To additionally run the browser checks locally:
+
+```sh
 npx playwright install chromium
 npm run test:smoke
 ```
 
-These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. They are pre-deployment gates, not automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
+These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. The fast automatic checks gate deployment; browser smoke tests are manual-only. Neither provides automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
 
 The camera-persistence smoke test uses the real local MediaPipe detector with a synthetic camera stream. Chromium explicitly uses SwiftShader software WebGL so hosted runners do not need a physical GPU. This test has a 90-second budget and waits up to 60 seconds for successful first-frame inference before checking dialog/countdown continuity; other smoke tests retain their 30-second budget. It also checks that a static stream is not repeatedly inferred merely because its media clock advances, and that new camera frames are processed both during background setup and countdown.
 

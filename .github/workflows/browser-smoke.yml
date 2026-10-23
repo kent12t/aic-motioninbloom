@@ -1,0 +1,36 @@
+name: Browser smoke tests (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    name: Chromium browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Typecheck and production build
+        run: npm run build
+      - name: Check required assets and Pages limits
+        run: npm run check:dist
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser smoke tests against production build
+        run: npm run test:smoke
+      - name: Save browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-diagnostics
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
