@@ -13,6 +13,9 @@ export const TRACKING = {
   zone: { left: 0.2, right: 0.8, top: 0.03, bottom: 0.97 },
   visibility: 0.6,
   calibrationMs: 1500,
+  // Catch a short seated window if the readiness gate was bypassed.
+  playingCalibrationMs: 150,
+  playingCalibrationFrames: 4,
   // Debounce across consecutive inference frames, not a pause at either endpoint.
   holdMs: 80,
   lostMs: 800,

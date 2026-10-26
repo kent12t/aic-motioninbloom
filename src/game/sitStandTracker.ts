@@ -119,6 +119,11 @@ export class SitStandTracker {
     this.lastSample = now
     this.lastValid = now
     if (!this.baseline) {
+      // A bypassed start must not require a long pause during continuous play.
+      // Still require consecutive, stable, visible seated samples; never replace
+      // an existing baseline or treat calibration itself as a repetition.
+      const calibrationMs = playing ? TRACKING.playingCalibrationMs : TRACKING.calibrationMs
+      const calibrationFrames = playing ? TRACKING.playingCalibrationFrames : 15
       const { hips, shoulders } = measured.anchors
       if (!hips || !shoulders || !measured.torso) {
         this.samples = []
@@ -142,13 +147,16 @@ export class SitStandTracker {
         this.calibrationSince = now
       }
       this.samples.push(measured)
-      if (now - this.calibrationSince < TRACKING.calibrationMs || this.samples.length < 15) {
-        return feedback('Sit still while we set your starting position…', true)
+      if (now - this.calibrationSince < calibrationMs || this.samples.length < calibrationFrames) {
+        const result = feedback('Sit still while we set your starting position…', true)
+        result.progress = Math.min(1, (now - this.calibrationSince) / calibrationMs,
+          this.samples.length / calibrationFrames)
+        return result
       }
       const anchors = { hips: null, shoulders: null, head: null } as Anchors
       for (const name of anchorNames) {
         const values = this.samples.map(p => p.anchors[name]).filter((p): p is Anchor => p !== null)
-        if (values.length >= 15) anchors[name] = {
+        if (values.length >= calibrationFrames) anchors[name] = {
           x: values.reduce((sum, p) => sum + p.x / values.length, 0),
           y: values.reduce((sum, p) => sum + p.y / values.length, 0),
         }

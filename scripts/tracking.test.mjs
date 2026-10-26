@@ -65,6 +65,38 @@ test('counts only complete, stable seated-standing-seated cycles', () => {
   s.feed(pose(), 1000)
   assert.equal(s.count(), 2)
 })
+test('bypassed start acquires a short seated window during play and counts the next cycle', () => {
+  const s = session()
+  assert.equal(s.feed(null, 2000).ready, false)
+  assert.equal(s.feed(pose(true), 1000).ready, false)
+  assert.equal(s.count(), 0)
+  assert.equal(s.feed(pose(), 150).ready, false)
+  assert.equal(s.feed(pose(), 50).ready, true)
+  assert.equal(s.count(), 0)
+  for (let cycle = 1; cycle <= 5; cycle++) {
+    s.feed(pose(true), 400)
+    s.feed(pose(), 400)
+    assert.equal(s.count(), cycle)
+  }
+})
+test('in-play calibration rejects missing, outside-zone and unstable seated windows', () => {
+  const s = session()
+  assert.equal(s.feed(pose(false, 0.1), 400).ready, false)
+  const hidden = pose()
+  for (const p of hidden) p.visibility = 0.1
+  assert.equal(s.feed(hidden, 400).ready, false)
+  for (let i = 0; i < 10; i++) {
+    const moving = pose()
+    for (const p of moving) p.y += i % 2 ? 0.04 : 0
+    assert.equal(s.feed(moving, 50).ready, false)
+  }
+  s.feed(null, 50)
+  assert.equal(s.feed(pose(), 150).ready, false)
+  s.feed(null, 50)
+  assert.equal(s.feed(pose(), 150).ready, false)
+  assert.equal(s.feed(pose(), 50).ready, true)
+  assert.equal(s.count(), 0)
+})
 test('a sustained partial rise rewards effort without confirming a stand or scoring', () => {
   const tracker = new SitStandTracker()
   let time = 0
