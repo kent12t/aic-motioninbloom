@@ -85,6 +85,8 @@ All application assets must live under `public/`, including images, fonts, video
 
 Preserve WebM alpha transparency; the field should remain visible behind the flower. Do not replace supplied flower animations with CSS-drawn flowers, hue-rotated duplicates, or opaque video backgrounds. Any additional stills/posters or design reference files added to the repository also belong under `public/`.
 
+Use the updated supplied flower videos (2026-10-26). Orange, Pink, Purple, and Violet retain their full duration; Yellow ends at 00:09. Regenerate each `*-bud.png` from the first decoded frame and each `*-bloom.png` from the last decoded frame of its playback asset, including the trimmed Yellow clip. Regenerate `*-flower.png` from the alpha-trimmed bloom, preserving aspect ratio at 600 pixels high.
+
 The supplied screen attachments are the visual references. Their original filenames are not recorded in this repository guide; the state names below provide the mapping. If reference files are added, record their actual paths here rather than inventing filenames.
 
 ### Floral-border opacity
@@ -250,6 +252,7 @@ Implemented:
 
 Verification performed during implementation:
 
+- Updated flower assets (2026-10-26): trimmed Yellow to exactly 9.000 seconds using stream copy to preserve the supplied VP9/alpha data. Regenerated all five first/last-frame PNG pairs and all five alpha-trimmed result flowers. Decoded-frame MD5 comparisons confirmed every bud/bloom matches its video's first/last frame; all 15 PNGs retain transparent and opaque pixels. Result derivatives preserve aspect ratio at 600 pixels high. Asset/documentation diff reviewed; browser playback and visual composition were not rechecked.
 - Result-copy alignment/wrapping (2026-10-23): lint and production build passed. A focused Chromium check using the built CSS and local fonts confirmed center alignment, pretty wrapping, and more than one word on the final line for all three explanatory paragraphs at 1080 × 1920, 390 × 844, 1440 × 900, and 900 × 500. Camera/gameplay checks were not repeated for this typography-only change.
 - Unique-flower selection (2026-10-23): lint, production build, and all 21 tracker/round tests passed. Automated checks cover all five flowers appearing exactly once even with repeated random values, fresh round state, completed-flower ordering, and partial results. Camera/video browser checks were not repeated for this selection-only change.
 - Camera-dialog redesign (2026-10-23): lint, production build, and all 11 Chromium browser tests passed. Added checks at 390 × 844, 1440 × 900, and 900 × 500 for contained dialog/buttons, no internal overflow, initial focus, Tab wrapping, Escape/close/Done dismissal, opener-focus restoration, retained safety acknowledgement, and denied-camera retry. Reviewed screenshots at all three sizes. A synthetic camera stream check confirmed the same live stream/video survives dialog dismissal, reopening on instructions, and transition to countdown without another camera request. Physical-camera calibration and real-person gameplay were not rechecked for this UI change.
