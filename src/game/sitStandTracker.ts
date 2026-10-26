@@ -22,6 +22,7 @@ export interface TrackingFeedback {
   repetition: boolean
   accepted: boolean
   stood: boolean
+  rising: boolean
 }
 
 function measure(points: LandmarkPoint[], baseline: Baseline | null): Measurement | null {
@@ -67,6 +68,7 @@ export class SitStandTracker {
   private hasStood = false
   private raisedAnchors = new Set<AnchorName>()
   private riseSince: Partial<Record<AnchorName, number>> = {}
+  private bloomSince: number | null = null
 
   reset() {
     this.baseline = null
@@ -86,13 +88,14 @@ export class SitStandTracker {
     this.hasStood = false
     this.raisedAnchors.clear()
     this.riseSince = {}
+    this.bloomSince = null
   }
 
   update(points: LandmarkPoint[] | null, now: number, playing: boolean): TrackingFeedback {
     const feedback = (message: string, accepted = false, repetition = false): TrackingFeedback => ({
       ready: this.baseline !== null && accepted,
       progress: this.baseline ? 1 : this.samples.length ? Math.min(1, (now - this.calibrationSince) / TRACKING.calibrationMs) : 0,
-      message, accepted, repetition, stood: false,
+      message, accepted, repetition, stood: false, rising: false,
     })
     const measured = points ? measure(points, this.baseline) : null
     if (!measured) {
@@ -103,6 +106,7 @@ export class SitStandTracker {
       this.candidateSince = now
       this.candidateFrames = 0
       this.riseSince = {}
+      this.bloomSince = null
       this.smooth = { hips: null, shoulders: null, head: null }
       if (now - this.lastValid >= TRACKING.lostMs) {
         this.clearCycle()
@@ -190,6 +194,10 @@ export class SitStandTracker {
       return result
     }
     const detected: Posture = standing ? 'standing' : sitting ? 'sitting' : 'unknown'
+    const beginningRise = anchorNames.some(name => (rises[name] ?? -Infinity) > TRACKING.bloomRise[name])
+    if (beginningRise && this.posture === 'sitting') this.bloomSince ??= now
+    else this.bloomSince = null
+    const rising = this.bloomSince !== null && now - this.bloomSince >= TRACKING.holdMs
     if (detected !== this.candidate) {
       this.candidate = detected
       this.candidateSince = now
@@ -218,6 +226,7 @@ export class SitStandTracker {
       : this.posture === 'unknown' ? 'Return to your seated starting position.'
         : 'Keep standing up and sitting down.', true, repetition)
     result.stood = stood
+    result.rising = rising
     return result
   }
 }

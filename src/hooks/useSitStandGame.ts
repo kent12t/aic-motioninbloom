@@ -8,7 +8,7 @@ import { usePoseCamera } from './usePoseCamera'
 export type GameScreen = 'safety' | 'instructions' | 'countdown' | 'playing' | 'results'
 const initialTracking: TrackingFeedback = {
   ready: false, progress: 0, message: 'Sit inside the guide with shoulders and hips visible.',
-  accepted: false, repetition: false, stood: false,
+  accepted: false, repetition: false, stood: false, rising: false,
 }
 
 export function useSitStandGame() {
@@ -28,7 +28,7 @@ export function useSitStandGame() {
     setScreenState(next)
   }, [])
 
-  const updateRound = useCallback((now: number, event: 'tick' | 'stood' | 'completed' = 'tick') => {
+  const updateRound = useCallback((now: number, event: 'tick' | 'rising' | 'stood' | 'completed' = 'tick') => {
     if (screenRef.current !== 'playing') return
     const next = round.current.update(now, event)
     setSession(next)
@@ -46,6 +46,7 @@ export function useSitStandGame() {
     const feedback = tracker.current.update(points, now, playing)
     trackingRef.current = feedback
     setTracking(feedback)
+    if (playing && feedback.rising) updateRound(now, 'rising')
     if (playing && feedback.stood) updateRound(now, 'stood')
     if (playing && feedback.repetition) updateRound(now, 'completed')
     return feedback.accepted

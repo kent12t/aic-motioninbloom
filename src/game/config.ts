@@ -17,6 +17,8 @@ export const TRACKING = {
   holdMs: 80,
   lostMs: 800,
   smoothingMs: 60,
+  // Visual reward only; these thresholds never confirm a repetition.
+  bloomRise: { hips: 0.12, shoulders: 0.18, head: 0.24 },
   seatedGapRange: { min: -0.4, max: 0.6 },
   // Relative to the seated torso: larger upper-body thresholds ignore small nods.
   rise: { hips: 0.32, shoulders: 0.5, head: 0.6 },

@@ -65,6 +65,36 @@ test('counts only complete, stable seated-standing-seated cycles', () => {
   s.feed(pose(), 1000)
   assert.equal(s.count(), 2)
 })
+test('a sustained partial rise rewards effort without confirming a stand or scoring', () => {
+  const tracker = new SitStandTracker()
+  let time = 0
+  const feed = (points, count, playing) => Array.from({ length: count }, () => {
+    time += 50
+    return tracker.update(points, time, playing)
+  })
+  feed(pose(), 40, false)
+  const partial = pose()
+  for (const i of [11, 12, 23, 24]) partial[i].y -= 0.05
+  assert.equal(feed(partial, 10, false).some(f => f.rising), false)
+  feed(pose(), 10, false)
+  assert.equal(feed(partial, 1, true).some(f => f.rising), false)
+  const attempt = feed(partial, 10, true)
+  assert.ok(attempt.some(f => f.rising))
+  assert.ok(attempt.every(f => !f.stood && !f.repetition))
+  assert.ok(feed(pose(), 20, true).every(f => !f.repetition))
+  assert.ok(feed(null, 20, true).every(f => !f.rising && !f.repetition))
+})
+test('early blooming is latched visually without awarding an attempted flower', () => {
+  const round = new FlowerRound()
+  round.start(0)
+  round.update(200, 'rising')
+  assert.equal(round.state.blooming, true)
+  round.update(3000)
+  assert.equal(round.state.blooming, true)
+  assert.deepEqual(round.state.completed, [])
+  round.update(40000)
+  assert.deepEqual(round.state.completed, [])
+})
 test('brief jitter and low-confidence landmarks never complete a stand', () => {
   const s = session()
   s.feed(pose(), 2000, false)

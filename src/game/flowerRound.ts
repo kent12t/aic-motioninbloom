@@ -32,7 +32,7 @@ export class FlowerRound {
     return this.state
   }
 
-  update(now: number, event: 'tick' | 'stood' | 'completed' = 'tick') {
+  update(now: number, event: 'tick' | 'rising' | 'stood' | 'completed' = 'tick') {
     if (this.startedAt === null || this.state.finished) return this.state
     const elapsed = Math.max(0, Math.min(GAME.seconds, (now - this.startedAt) / 1000))
     if (elapsed >= GAME.seconds) {
@@ -40,7 +40,7 @@ export class FlowerRound {
       return this.state
     }
     let { completed, blooming } = this.state
-    if (event === 'stood') blooming = true
+    if (event === 'rising' || event === 'stood') blooming = true
     if (event === 'completed' && blooming) {
       completed = [...completed, this.state.flowers[completed.length]]
       blooming = false
