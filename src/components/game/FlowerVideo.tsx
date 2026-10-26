@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Flower } from '../../game/flowerRound'
 
 // Remount per cycle, even when the random flower matches the previous cycle.
-export function FlowerVideo({ flower, blooming }: { flower: Flower; blooming: boolean }) {
+export function FlowerVideo({ flower, blooming, visible = true }: { flower: Flower; blooming: boolean; visible?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const shouldPlay = useRef(blooming)
   const [fallback, setFallback] = useState(false)
@@ -44,7 +44,8 @@ export function FlowerVideo({ flower, blooming }: { flower: Flower; blooming: bo
   }, [])
 
   return (
-    <div className="flower-video" aria-label={`${flower} flower ${blooming ? 'blooming' : 'ready to bloom'}`} role="img">
+    <div className="flower-video" style={{ visibility: visible ? 'visible' : 'hidden' }}
+      aria-hidden={!visible} aria-label={`${flower} flower ${blooming ? 'blooming' : 'ready to bloom'}`} role="img">
       <video ref={videoRef} src={`/videos/${flower}.webm`} poster={`/videos/${flower}-bud.png`}
         preload="auto" muted playsInline onCanPlay={play} onError={() => setFallback(true)}
         onEnded={() => { cancelAnimationFrame(frame.current); setEnded(true) }}

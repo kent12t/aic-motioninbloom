@@ -15,8 +15,9 @@ export function PlayingScreen({ session }: { session: RoundState }) {
         <div><span>Score</span><strong aria-live="polite" aria-label={`${session.completed.length} of ${GAME.target} sets complete`}>{session.completed.length}</strong></div>
       </header>
       <h1 className="encouragement"><span className="windsor">Keep Going!</span></h1>
-      {flower && <FlowerVideo key={session.completed.length} flower={flower} blooming={session.blooming} />}
-      {previousFlower && <div key={previousFlower} className="flower-video flower-handoff" aria-hidden="true">
+      {flower && <FlowerVideo key={session.completed.length} flower={flower} blooming={session.blooming}
+        visible={!previousFlower || session.blooming} />}
+      {previousFlower && !session.blooming && <div className="flower-video" role="img" aria-label={`${previousFlower} flower bloomed`}>
         <img src={`/videos/${previousFlower}-bloom.png`} alt="" />
       </div>}
       {nextFlower && <div hidden aria-hidden="true">

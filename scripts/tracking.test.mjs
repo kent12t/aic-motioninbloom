@@ -84,6 +84,40 @@ test('a sustained partial rise rewards effort without confirming a stand or scor
   assert.ok(feed(pose(), 20, true).every(f => !f.repetition))
   assert.ok(feed(null, 20, true).every(f => !f.rising && !f.repetition))
 })
+test('seated return above the bloom threshold does not start the next flower', () => {
+  const tracker = new SitStandTracker()
+  const round = new FlowerRound()
+  let time = 0
+  const feed = (points, count, playing = true) => Array.from({ length: count }, () => {
+    time += 50
+    const f = tracker.update(points, time, playing)
+    if (playing) {
+      if (f.rising) round.update(time, 'rising')
+      if (f.stood) round.update(time, 'stood')
+      if (f.repetition) round.update(time, 'completed')
+    }
+    return f
+  })
+  feed(pose(), 40, false)
+  round.start(time)
+  feed(pose(true), 20)
+  // Still descending/settling: hips qualify as seated but remain above the
+  // lower visual-reward threshold. This is not the next ascent.
+  const settling = pose()
+  for (const i of [11, 12, 23, 24]) settling[i].y -= 0.04
+  const returns = feed(settling, 30)
+  assert.equal(round.state.completed.length, 1)
+  const completedAt = returns.findIndex(f => f.repetition)
+  assert.ok(completedAt >= 0)
+  assert.ok(returns.slice(completedAt + 1).every(f => !f.rising))
+  assert.equal(round.state.blooming, false)
+  feed(pose(), 10)
+  const nextRise = pose()
+  for (const i of [11, 12, 23, 24]) nextRise[i].y -= 0.05
+  assert.ok(feed(nextRise, 10).some(f => f.rising))
+  assert.equal(round.state.blooming, true)
+  assert.equal(round.state.completed.length, 1)
+})
 test('early blooming is latched visually without awarding an attempted flower', () => {
   const round = new FlowerRound()
   round.start(0)

@@ -161,6 +161,7 @@ export class SitStandTracker {
     const base = this.baseline
     const alpha = 1 - Math.exp(-dt / TRACKING.smoothingMs)
     const rises: Partial<Record<AnchorName, number>> = {}
+    const ascending = new Set<AnchorName>()
     for (const name of anchorNames) {
       const current = measured.anchors[name]
       const reference = base.anchors[name]
@@ -169,6 +170,8 @@ export class SitStandTracker {
         y: previous ? previous.y + alpha * (current.y - previous.y) : current.y } : null
       const smoothed = this.smooth[name]
       if (smoothed && reference) rises[name] = (reference.y - smoothed.y) / base.torso
+      if (smoothed && previous && dt > 0
+        && (previous.y - smoothed.y) / base.torso / (dt / 1000) > 0.02) ascending.add(name)
     }
     // Any calibrated anchor can confirm a rise. A previously risen anchor must
     // return to seated height (or lower); missing/unrelated anchors cannot score.
@@ -194,7 +197,10 @@ export class SitStandTracker {
       return result
     }
     const detected: Posture = standing ? 'standing' : sitting ? 'sitting' : 'unknown'
-    const beginningRise = anchorNames.some(name => (rises[name] ?? -Infinity) > TRACKING.bloomRise[name])
+    // Seated-return tolerance overlaps the visual threshold. Height alone can
+    // therefore retrigger while descending; require actual upward motion too.
+    const beginningRise = anchorNames.some(name => ascending.has(name)
+      && (rises[name] ?? -Infinity) > TRACKING.bloomRise[name])
     if (beginningRise && this.posture === 'sitting') this.bloomSince ??= now
     else this.bloomSince = null
     const rising = this.bloomSince !== null && now - this.bloomSince >= TRACKING.holdMs
