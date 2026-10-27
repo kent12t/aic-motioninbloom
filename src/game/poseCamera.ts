@@ -7,7 +7,7 @@ export async function createPoseDetector() {
   const vision = await FilesetResolver.forVisionTasks(`${base}wasm`)
   const options = {
     runningMode: 'VIDEO' as const,
-    numPoses: 1,
+    numPoses: 3,
     minPoseDetectionConfidence: 0.6,
     minPosePresenceConfidence: 0.6,
     minTrackingConfidence: 0.6,

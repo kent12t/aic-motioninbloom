@@ -13,6 +13,9 @@ async function moduleUrl(path, imports = {}) {
 }
 const config = await moduleUrl('../src/game/config.ts')
 const types = await moduleUrl('../src/types/game.ts')
+const { MainPlayer } = await import(await moduleUrl('../src/game/mainPlayer.ts', {
+  './config': config,
+}))
 const { SitStandTracker } = await import(await moduleUrl('../src/game/sitStandTracker.ts', {
   './config': config, '../types/game': types,
 }))
@@ -27,6 +30,83 @@ function pose(standing = false, x = 0.5) {
   for (const i of [25, 26]) points[i].y = standing ? 0.73 : 0.69
   return points
 }
+
+function playerPose(scale = 1, x = 0.5, rise = 0) {
+  const points = pose()
+  for (const p of points) {
+    p.x = x
+    p.y = 0.55 + (p.y - 0.55) * scale - rise
+  }
+  for (const [left, right, width] of [[11, 12, 0.22], [23, 24, 0.16], [7, 8, 0.1]]) {
+    points[left].x -= width * scale / 2
+    points[right].x += width * scale / 2
+  }
+  return points
+}
+
+function lockPlayer(selector, points) {
+  for (let t = 0; t < 150; t += 50) assert.equal(selector.select([points], t), null)
+  assert.equal(selector.select([points], 150), points)
+}
+
+test('main player prefers a stable central foreground torso, independent of detector order', () => {
+  const selector = new MainPlayer()
+  const main = playerPose()
+  const background = playerPose(0.55, 0.56)
+  for (let t = 0; t < 150; t += 50) assert.equal(selector.select([background, main], t), null)
+  assert.equal(selector.select([main, background], 150), main)
+  assert.equal(selector.select([background, main], 200), main)
+})
+
+test('faces, small distant bodies, off-centre people and ambiguous players cannot acquire', () => {
+  const face = playerPose()
+  for (const i of [11, 12, 23, 24]) face[i].visibility = 0
+  for (const poses of [[face], [playerPose(0.3)], [playerPose(1, 0.7)],
+    [playerPose(1, 0.46), playerPose(1, 0.54)]]) {
+    const selector = new MainPlayer()
+    for (let t = 0; t < 2000; t += 50) assert.equal(selector.select(poses, t), null)
+  }
+})
+
+test('player lock survives long absence without accepting a smaller or lateral bystander', () => {
+  const selector = new MainPlayer()
+  const main = playerPose()
+  lockPlayer(selector, main)
+  assert.equal(selector.select([], 200), null)
+  for (const t of [1000, 5000, 60000]) {
+    assert.equal(selector.select([playerPose(0.55), playerPose(1, 0.68)], t), null)
+  }
+  assert.equal(selector.select([main], 60100), main)
+  assert.equal(selector.select([main, playerPose(1, 0.51)], 60200), null)
+})
+
+test('vertical motion and clipped upper body retain the player, but hidden anchors do not', () => {
+  const selector = new MainPlayer()
+  lockPlayer(selector, playerPose())
+  const standing = playerPose(1, 0.52, 0.25)
+  for (const i of [7, 8, 11, 12]) standing[i].visibility = 0
+  assert.equal(selector.select([playerPose(0.5), standing], 200), standing)
+  for (const p of standing) p.visibility = 0
+  assert.equal(selector.select([standing], 250), null)
+  const headOnly = playerPose(1, 0.5, 0.2)
+  for (const i of [11, 12, 23, 24]) headOnly[i].visibility = 0
+  assert.equal(selector.select([headOnly], 300), headOnly)
+})
+
+test('background motion cannot calibrate or score while the locked player is absent', () => {
+  const selector = new MainPlayer()
+  const tracker = new SitStandTracker()
+  const main = playerPose()
+  lockPlayer(selector, main)
+  for (let t = 200; t < 2200; t += 50) tracker.update(selector.select([main], t), t, false)
+  assert.equal(tracker.update(selector.select([main], 2200), 2200, false).ready, true)
+  for (let t = 2250; t < 6000; t += 50) {
+    const background = playerPose(0.5, 0.5, t % 1000 < 500 ? 0.2 : 0)
+    const result = tracker.update(selector.select([background], t), t, true)
+    assert.equal(result.repetition, false)
+    assert.equal(result.stood, false)
+  }
+})
 function session() {
   const tracker = new SitStandTracker()
   let time = 0

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPoseDetector, drawCameraGuide, maskCameraFrame } from '../game/poseCamera'
 import { TRACKING } from '../game/config'
+import { MainPlayer } from '../game/mainPlayer'
 import type { LandmarkPoint } from '../types/game'
 
 type PoseFrame = (points: LandmarkPoint[] | null, now: number) => boolean
@@ -34,6 +35,7 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     let lastVideoFrame = ''
     let lastMissingReport = -Infinity
     const input = document.createElement('canvas')
+    const player = new MainPlayer()
     const fail = (cause: unknown) => {
       if (!active) return
       cancelAnimationFrame(frame)
@@ -60,9 +62,10 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
           lastVideoFrame = videoFrame
           maskCameraFrame(video, input)
           const result = detector.detectForVideo(input, now)
-          const points = result.landmarks[0]?.map(({ x, y, visibility }) => ({
+          const poses = result.landmarks.map(pose => pose.map(({ x, y, visibility }) => ({
             x, y, visibility: visibility ?? 0,
-          })) ?? null
+          })))
+          const points = player.select(poses, now)
           const accepted = onPoseRef.current(points, now)
           if (overlayRef.current) drawCameraGuide(overlayRef.current, video, points, accepted)
         } catch (cause) {
