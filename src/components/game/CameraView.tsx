@@ -1,8 +1,12 @@
 import { useEffect, useRef, type Ref } from 'react'
+import { PoseStatus } from './PoseStatus'
+import type { DetectedPose } from '../../game/sitStandTracker'
 
 interface CameraViewProps {
   videoRef: Ref<HTMLVideoElement>
   overlayRef: Ref<HTMLCanvasElement>
+  pose: DetectedPose
+  loading?: boolean
   message: string
   calibrationProgress?: number
   error?: string
@@ -11,10 +15,9 @@ interface CameraViewProps {
   ready: boolean
   hidden?: boolean
   setup?: boolean
-  showMessage?: boolean
 }
 
-export function CameraView({ videoRef, overlayRef, message, calibrationProgress, error, onRetry, onClose, ready, hidden, setup, showMessage }: CameraViewProps) {
+export function CameraView({ videoRef, overlayRef, pose, loading, message, calibrationProgress, error, onRetry, onClose, ready, hidden, setup }: CameraViewProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export function CameraView({ videoRef, overlayRef, message, calibrationProgress,
   }, [setup, hidden])
 
   return (
-    <section className={`camera-panel ${hidden ? 'camera-hidden' : ''} ${setup ? 'camera-setup' : ''}`} aria-label="Player camera" aria-hidden={hidden || undefined}>
+    <section className={`camera-panel ${hidden ? 'camera-hidden' : ''} ${setup ? 'camera-setup' : 'camera-pose'}`} aria-label={setup ? 'Player camera' : 'Detected movement'} aria-hidden={hidden || undefined}>
       <dialog ref={dialogRef} id="setup-camera-dialog" className="camera-dialog"
         aria-labelledby={setup ? 'camera-dialog-title' : undefined}
         aria-describedby={setup ? 'camera-dialog-guidance' : undefined}
@@ -57,12 +60,13 @@ export function CameraView({ videoRef, overlayRef, message, calibrationProgress,
         </header>}
         <div className="camera-stage">
           <video ref={videoRef} autoPlay playsInline muted />
-          <canvas ref={overlayRef} />
+          <canvas ref={overlayRef} className="camera-guide" />
           {setup && error && <div className="camera-unavailable" aria-hidden="true">
             <img src="/camera-unavailable.svg" alt="" />
             <span>Let’s get you connected</span>
           </div>}
         </div>
+        {!setup && <PoseStatus pose={pose} error={error} loading={loading} />}
         {setup ? <>
           <div className={`camera-dialog-status ${error ? 'camera-status-error' : ready ? 'camera-status-ready' : ''}`}>
             <p role={hidden ? undefined : 'status'}><span className="camera-status-dot" aria-hidden="true" />{error ? 'Camera needs attention' : ready ? 'You’re in position!' : 'Finding your seated position'}</p>
@@ -75,7 +79,6 @@ export function CameraView({ videoRef, overlayRef, message, calibrationProgress,
             <button className="primary-button camera-done-button" onClick={onClose}><span className="windsor">Done</span></button>
           </div>
         </> : <>
-          {(showMessage || error) && <p className="camera-message" role={hidden ? undefined : 'status'}>{error || message}</p>}
           {error && !hidden && <button className="retry-camera" onClick={onRetry}>Retry camera</button>}
         </>}
       </dialog>

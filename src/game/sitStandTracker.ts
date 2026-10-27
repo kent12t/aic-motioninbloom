@@ -15,7 +15,10 @@ interface Baseline {
 }
 const anchorNames: AnchorName[] = ['hips', 'shoulders', 'head']
 
+export type DetectedPose = 'sitting' | 'transition' | 'standing' | 'unknown'
+
 export interface TrackingFeedback {
+  pose: DetectedPose
   ready: boolean
   progress: number
   message: string
@@ -95,7 +98,7 @@ export class SitStandTracker {
     const feedback = (message: string, accepted = false, repetition = false): TrackingFeedback => ({
       ready: this.baseline !== null && accepted,
       progress: this.baseline ? 1 : this.samples.length ? Math.min(1, (now - this.calibrationSince) / TRACKING.calibrationMs) : 0,
-      message, accepted, repetition, stood: false, rising: false,
+      message, accepted, repetition, stood: false, rising: false, pose: 'unknown',
     })
     const measured = points ? measure(points, this.baseline) : null
     if (!measured) {
@@ -202,6 +205,7 @@ export class SitStandTracker {
       const result = feedback(sitting ? 'Starting position set. Stay seated and press Play now.'
         : 'Return to your seated starting position before beginning.', true)
       result.ready = sitting
+      result.pose = sitting ? 'sitting' : 'transition'
       return result
     }
     const detected: Posture = standing ? 'standing' : sitting ? 'sitting' : 'unknown'
@@ -241,6 +245,10 @@ export class SitStandTracker {
         : 'Keep standing up and sitting down.', true, repetition)
     result.stood = stood
     result.rising = rising
+    // Presentation only: do not change repetition thresholds or award cycles
+    // from the intermediate illustration. Wait out the existing debounce.
+    result.pose = detected === 'unknown' || rising ? 'transition'
+      : this.posture === detected ? detected : 'transition'
     return result
   }
 }

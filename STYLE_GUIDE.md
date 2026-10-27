@@ -70,6 +70,7 @@ All application assets must live under `public/`, including images, fonts, video
 | `/bg-flower.png` | Bottom floral border on safety, instructions, countdown, and results |
 | `/bg-field.jpg` | Full portrait gameplay landscape and result-frame landscape treatment |
 | `/instr1.png` … `/instr4.png` | Four instruction illustrations, in order |
+| `/sitting.png`, `/transition.png`, `/standing.png` | Preset detected-pose illustrations for countdown/gameplay |
 | `/flower-pots.png` | Supplied pot artwork for result flower compositions |
 | `/videos/orange.webm` | Transparent flower animation |
 | `/videos/pink.webm` | Transparent flower animation |
@@ -134,7 +135,7 @@ Apply opacity to a dedicated decorative image/layer only. Text, buttons, QR code
 
 - Light-yellow stage, 20%-opacity floral border.
 - Centered bold orange safety reminder above a large purple Windsor numeral: “3”, “2”, “1”.
-- Live camera inset at the lower left, above the floral layer, with rounded corners.
+- Detected-pose illustration panel at the lower left, above the floral layer, with rounded corners.
 - The player remains seated; countdown does not count repetitions or consume the 40-second game time.
 
 ### Playing
@@ -143,7 +144,9 @@ Apply opacity to a dedicated decorative image/layer only. Text, buttons, QR code
 - HUD: “Time” at top-left and “Score” at top-right, each above a purple rounded rectangular value panel. Labels use bold dark-purple Circular; values use a high-contrast light color.
 - Format time as `MM:SS`; keep it driven by the shared game timer. Score is the number of **completed** sit/stand cycles, from 0 to 5.
 - Purple Windsor encouragement (“Keep Going!”) below the HUD.
-- Camera inset remains at lower left. Reference proportions are approximately 27% of stage width and 27% of stage height, with about 6% left inset and 2% bottom inset; use the same placement in countdown and gameplay.
+- Movement inset remains at lower left. Reference proportions are approximately 27% of stage width and 27% of stage height, with about 6% left inset and 2% bottom inset; use the same placement in countdown and gameplay.
+- During countdown and gameplay, show the supplied `/sitting.png`, `/transition.png`, or `/standing.png` in a plain light-yellow rounded panel. Layout is “Detected Motion” at the top, a large full-length illustration in the middle, and one bold motion label below: “Sitting”, “Transition”, or “Standing”. Use readable purple Circular text, with no supporting body copy. Unknown/calibrating tracking shows a faded seated illustration and “Finding position”; camera loading/errors show “Getting ready” / “Camera unavailable”. Keep illustration space stable across states. The live camera stays mounted for tracking; “Check camera” retains the actual feed and framing guide. No segmentation inference is needed.
+- Preserve the illustrations' original relative dimensions (sitting 206 × 554, transition 194 × 632, standing 173 × 693): apply one uniform scale across all three rather than independently fitting each pose. Center them horizontally and bottom-align them to a shared baseline within the fixed illustration area.
 - Fill the entire camera frame with a centered, aspect-ratio-preserving cover crop, including its full height; do not leave letterbox or pillarbox bars. Landscape feeds crop evenly at the sides in the portrait inset. Apply exactly the same cover sizing, center position, and mirroring to the source-resolution guide canvas and video so inference-mask/overlay alignment is preserved. A portrait camera frame must not distort the player or independently crop the overlay. Keep relevant joints visible and retain useful tracking guidance without competing with the main composition.
 
 ### Results — shared composition
@@ -242,6 +245,8 @@ For applicable UI/gameplay changes:
 
 Implemented:
 
+- Countdown/gameplay use the supplied sitting/transition/standing illustrations in a plain light-yellow detected-pose panel with status copy. Setup keeps its actual camera feed and guide. Presentation reads tracker posture feedback without changing scoring; segmentation and its empty-mask CPU fallback have been removed.
+
 - Local fonts and assets, exact brand palette, shared 80%-scaled Windsor treatment, fitted/centered 9:16 stage, and screen-specific floral opacity.
 - Safety acknowledgements with deferred camera startup/background calibration, illustrated instructions, readiness-gated countdown, and gameplay HUD/camera inset. An unobtrusive setup status and “Check camera” control expose framing/retry without blocking checkbox completion.
 - Setup-camera check uses a centered native modal with an integrated close button, large preview, grouped calibration feedback, framing guidance, retry, and Done. Background controls are inert while open; explicit Tab wrapping, Escape dismissal, and native opener-focus restoration support keyboard use. The same video remains mounted through setup and gameplay.
@@ -256,6 +261,14 @@ Implemented:
 - Home/play-again clear acknowledgements, baseline, timers, video, and flower state. Camera tracks/detector are cleaned up at results and full restart.
 
 Verification performed during implementation:
+
+- Preset-pose panel (2026-10-26): lint, production build/typecheck, and all 26 tracking/round tests passed. Chromium component checks at 1080 × 1920, 1440 × 900, and 900 × 500 verified loaded artwork and no panel overflow for sitting, transition, standing, and unknown states. Reviewed the portrait seated-panel screenshot, including plain brand-yellow background, contained illustration, local Circular typography, and detection copy. Real-person pose switching, camera setup transitions, and assistive-technology announcements remain pending.
+
+- Blank-silhouette fix (2026-10-26): reproduced an all-zero mask with the real local MediaPipe model in Chromium/SwiftShader using the MediaPipe sample person image. Switching the same detector to CPU changed visible silhouette pixels from 0 to 46,585. Added one-time CPU fallback for a detected person with an empty mask. Lint and production build/typecheck passed. Live-camera motion, setup transitions, and CPU performance on booth hardware remain pending.
+
+- Live cut-out silhouette (2026-10-26): lint, production build/typecheck, and diff whitespace checks passed. Reviewed native-mask rendering, smoothstep alpha edges, brand-token fill, synchronous callback mask consumption, missing-mask clearing, and preserved setup feed/crop. Live-camera segmentation quality, chair separation, head clipping, and inference performance on booth hardware remain unverified.
+
+- Illustrated movement inset (2026-10-26): lint, production build/typecheck, and diff whitespace checks passed. Reviewed shared source-coordinate sizing, mirrored cover crop, brand-token colours, setup-only live feed, and clearing on missing tracking. Camera-enabled browser visual checks of the silhouette, head clipping, and setup/countdown transition remain pending.
 
 - In-play calibration recovery (2026-10-26): lint, production build, diff checks, and all 26 tracker/round tests passed. New regressions cover a camera arriving after gameplay begins, rejection of standing/unstable/hidden/out-of-zone samples, short seated acquisition, no calibration-awarded cycle, and five subsequent cycles. Camera-enabled browser and real-person verification of late calibration remain pending.
 - Descending-return trigger fix (2026-10-26): reproduced the next flower starting after a seated return with a failing synthetic tracker/round regression. Early-rise confirmation now requires sustained upward motion, not height alone, preventing the overlap between seated-return tolerance and bloom thresholds from triggering during descent or rest. The regression passes after the fix; all 24 tracker/round tests, lint, and production build passed. Live camera verification remains pending.

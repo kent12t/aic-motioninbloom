@@ -27,9 +27,9 @@ export function App() {
       {screen === 'results' && <ResultsScreen session={game.session} onRestart={restart} />}
 
       {/* Keep the video attached while calibrating in the background and between screens. */}
-      <CameraView videoRef={camera.attachVideo} overlayRef={camera.overlayRef}
+      <CameraView videoRef={camera.attachVideo} overlayRef={camera.overlayRef} pose={tracking.pose} loading={camera.status === 'loading'}
         hidden={!cameraEnabled || screen === 'results' || (preparing && !showSetup)} setup={preparing}
-        message={cameraMessage} showMessage={!tracking.accepted || camera.status !== 'ready'} calibrationProgress={preparing ? tracking.progress : undefined}
+        message={cameraMessage} calibrationProgress={preparing ? tracking.progress : undefined}
         error={camera.error} onRetry={game.retryCamera} onClose={() => setShowSetup(false)} ready={ready} />
 
       {preparing && cameraEnabled && <div className="setup-status">
