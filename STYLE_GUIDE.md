@@ -81,6 +81,7 @@ All application assets must live under `public/`, including images, fonts, video
 | `/videos/*-flower.png` | Cropped bloom derivatives for consistent result-pot composition |
 | `/home.svg` | Inconspicuous restart/home control |
 | `/close-camera.svg`, `/camera-unavailable.svg` | Setup-camera dialog close control and unavailable-camera illustration |
+| `/qrcode.png` | Supplied result-screen QR code (800 × 800) used by “Scan here / to read more” |
 | `/fonts/…` | Local fonts listed above |
 | `/mediapipe/…` | Local model and prepared WASM runtime; see `AGENTS.md` |
 
@@ -175,7 +176,7 @@ Use these explanatory paragraphs:
 
 Keep every outcome encouraging. “Failed” is an internal outcome description, not a player-facing grade or diagnosis. Zero completed cycles use the same supportive composition with one empty pot as a visual placeholder, never an awarded flower.
 
-The QR destination has not been supplied. The current `GameQrCode` encodes `window.location.href`; the reference's “read more” destination requires an approved URL. Do not invent a screening-information URL or imply session results are encoded.
+The supplied result QR code asset `/qrcode.png` is shared as-is on every result variant. Its encoded “read more” destination comes from the supplied artwork; do not imply session results are encoded.
 
 ## 6. Interaction and animation contract
 
@@ -306,6 +307,6 @@ Remaining verification/integration:
 
 - Temporary screen-debugging bypass is active (`GAME.requireCalibration: false`). Restore to `true` when finished debugging to re-enable the existing Play now/countdown readiness gates.
 - Real-person USB-camera checks cover the initial normalization fix and continuous-motion counting. Broader calibration/repetition accuracy across participants and camera positions, live tracking-loss recovery, live head-out-of-frame movement, and sustained video performance still need checking on the intended booth hardware.
-- The QR still links to the current page; the approved “read more” URL remains unspecified.
+- The QR uses the supplied `/qrcode.png`, shared as-is across variants; the runtime `qrcode` generation was removed.
 
 Update this section as changes land; keep the normative requirements above intact unless the user changes them.

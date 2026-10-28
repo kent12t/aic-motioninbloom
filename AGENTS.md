@@ -27,5 +27,5 @@
 - Browser verification needs camera permission and a secure context (localhost or HTTPS). Start seated with shoulders and hips visible for calibration. During play, clear vertical motion of a calibrated head, shoulder pair, or hip pair can confirm a rise; knees are not required and head/shoulder clipping can fall back to remaining anchors. Preserve continuous movement without endpoint pauses and require a previously risen anchor to return before scoring; missing joints alone never count.
 - `main.tsx` enables React StrictMode. Preserve effect cleanup for camera tracks, detector instances, animation frames, and timers.
 - `usePoseCamera.attachVideo` attaches the current stream to its video element. Preserve cancellation cleanup for asynchronous detector creation under StrictMode and when the camera is disabled.
-- `GameQrCode` encodes `window.location.href`, not session results or a separate share endpoint; a localhost URL will also appear in its QR code.
+- `GameQrCode` now renders the supplied `/qrcode.png`; it does not encode session results or the current page URL.
 - Keep outcome feedback encouraging; raw performance grades are not part of the player UI.

@@ -5,7 +5,7 @@ import { readdir, readFile, stat } from 'node:fs/promises'
 const dist = new URL('../dist/', import.meta.url)
 const publicRoot = new URL('../public/', import.meta.url)
 const required = [
-  'index.html', 'bg-flower.png', 'bg-field.jpg', 'flower-pots.png', 'home.svg',
+  'index.html', 'bg-flower.png', 'bg-field.jpg', 'flower-pots.png', 'home.svg', 'qrcode.png',
   'fonts/Windsor_Regular.ttf', 'fonts/CircularStd-Book.otf', 'fonts/CircularStd-Black.otf',
   'mediapipe/pose_landmarker_lite.task',
   ...['internal', 'nosimd_internal', 'module_internal'].flatMap((variant) =>
