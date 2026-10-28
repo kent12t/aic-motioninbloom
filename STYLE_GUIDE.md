@@ -160,7 +160,7 @@ Apply opacity to a dedicated decorative image/layer only. Text, buttons, QR code
 - The result flower is the corresponding video's **last frame**, paused or captured as a transparent still. Alpha-trimmed last-frame derivatives are permitted. Bottom-align the frame image within the pot composition, with padding above the pot base so the stem reaches the soil. Preserve its aspect ratio and layer the front pot rim over the stem tip so it looks planted. The current composition uses a 13% bottom inset, shared across flower types and scaled with the pot frame.
 - Preserve chronological order left-to-right, then top-to-bottom. Never randomize the gallery during rendering or derive flower identity from its array index.
 - Highlight elapsed time to one decimal place; choose the outcome using the unrounded time.
-- Purple QR code with supporting label “Scan here / to read more”. Ensure it remains scannable and has an accessible description.
+- Purple QR code with supporting label “Scan here / to read more”. Size the QR to 20% of the stage width, center the QR-and-label group, and keep clear space before “Play again” in every result variant. Ensure it remains scannable and has an accessible description.
 
 | Outcome | Condition | Heading and support | Accent |
 | --- | --- | --- | --- |
@@ -246,6 +246,8 @@ For applicable UI/gameplay changes:
 ## 8. Implementation status
 
 Implemented:
+
+- Results QR enlarged to 20% of stage width, with a centered QR/label group and lower restart buttons to preserve separation across outcomes.
 
 - Main-player selection evaluates up to three poses in the masked camera image, acquires a stable central torso, and retains a fixed geometric lock. Background faces alone cannot acquire it; smaller/laterally displaced people and ambiguous matches do not feed calibration, motion illustrations, or repetitions. Missing-player time does not release the lock; retry/restart creates a new selector.
 

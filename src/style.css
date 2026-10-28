@@ -244,19 +244,19 @@ h1 .windsor { display: block; width: 125%; margin-left: -12.5%; }
 .result-flower { position: absolute; width: 84%; height: 71%; bottom: var(--flower-bottom-padding); left: 8%; object-fit: contain; object-position: center bottom; }
 .flower-pot-front { clip-path: inset(86% 0 0); pointer-events: none; }
 .result-message { position: absolute; top: 59.05%; left: 11.5%; width: 77%; font-size: 3.33cqw; line-height: 1.2; text-align: center; text-wrap: pretty; }
-.qr-block { position: absolute; top: 68.1%; left: 32.6%; width: 35%; height: 12cqw; display: flex; align-items: center; gap: 1cqw; color: var(--color-purple); }
-.qr-code { width: 14cqw; height: 14cqw; flex: 0 0 14cqw; image-rendering: pixelated; }
+.qr-block { position: absolute; top: 68.1%; left: 50%; transform: translateX(-50%); width: max-content; height: 20cqw; display: flex; align-items: center; gap: 1.5cqw; color: var(--color-purple); }
+.qr-code { width: 20cqw; height: 20cqw; flex: 0 0 20cqw; image-rendering: pixelated; }
 .qr-block p { font-size: 3.1cqw; line-height: 1.05; white-space: nowrap; }
-.play-again { top: 78.25%; left: 33.1%; width: 33.8%; }
+.play-again { top: 81%; left: 33.1%; width: 33.8%; }
 .result-incomplete .results-heading { top: 15.5%; color: var(--color-orange); }
 .result-incomplete .results-heading h1 { font-size: 7.1cqw; }
 .completed-message { font-size: 5.5cqw; font-weight: 900; white-space: nowrap; margin-top: 1.3cqw; }
 .result-incomplete .result-message { top: 45%; }
 .result-incomplete .qr-block { top: 61.3%; }
-.result-incomplete .play-again { top: 71.7%; }
+.result-incomplete .play-again { top: 75%; }
 .result-incomplete.gallery-two-rows .result-message { top: 59.05%; }
-.result-incomplete.gallery-two-rows .qr-block { top: 70%; }
-.result-incomplete.gallery-two-rows .play-again { top: 79.5%; }
+.result-incomplete.gallery-two-rows .qr-block { top: 69%; }
+.result-incomplete.gallery-two-rows .play-again { top: 82%; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 
 @media (prefers-reduced-motion: reduce) {
