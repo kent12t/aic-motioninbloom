@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GAME } from '../game/config'
-import { FlowerRound } from '../game/flowerRound'
+import { FlowerRound, resultOutcome } from '../game/flowerRound'
+import { recordGameResult } from '../offlineTracking'
 import { SitStandTracker, type TrackingFeedback } from '../game/sitStandTracker'
 import type { LandmarkPoint } from '../types/game'
 import { usePoseCamera } from './usePoseCamera'
@@ -17,6 +18,7 @@ export function useSitStandGame() {
   const round = useRef(new FlowerRound())
   const screenRef = useRef<GameScreen>('safety')
   const trackingRef = useRef(initialTracking)
+  const startedAt = useRef<string | null>(null)
   const [screen, setScreenState] = useState<GameScreen>('safety')
   const [acknowledgements, setAcknowledgements] = useState([false, false, false])
   const [cameraEnabled, setCameraEnabled] = useState(false)
@@ -29,11 +31,41 @@ export function useSitStandGame() {
     setScreenState(next)
   }, [])
 
+  const recordInterruption = useCallback((reason: 'restart' | 'camera_retry' | 'page_exit') => {
+    if (!startedAt.current) return
+    const next = round.current.update(performance.now())
+    recordGameResult({
+      completedCycles: next.completed.length, targetCycles: GAME.target,
+      outcome: resultOutcome(next.completed.length, next.elapsed),
+      elapsedSeconds: next.elapsed, startedAt: startedAt.current,
+      status: next.finished ? 'finished' : 'interrupted',
+      interruptionReason: next.finished ? '' : reason,
+    })
+    startedAt.current = null
+  }, [])
+
+  useEffect(() => {
+    const onPageExit = () => recordInterruption('page_exit')
+    window.addEventListener('pagehide', onPageExit)
+    return () => window.removeEventListener('pagehide', onPageExit)
+  }, [recordInterruption])
+
   const updateRound = useCallback((now: number, event: 'tick' | 'rising' | 'stood' | 'completed' = 'tick') => {
     if (screenRef.current !== 'playing') return
     const next = round.current.update(now, event)
     setSession(next)
-    if (next.finished) setScreen('results')
+    if (next.finished) {
+      setScreen('results')
+      if (startedAt.current) {
+        recordGameResult({
+          completedCycles: next.completed.length, targetCycles: GAME.target,
+          outcome: resultOutcome(next.completed.length, next.elapsed),
+          elapsedSeconds: next.elapsed, startedAt: startedAt.current,
+          status: 'finished', interruptionReason: '',
+        })
+        startedAt.current = null
+      }
+    }
   }, [setScreen])
 
   const onPose = useCallback((points: LandmarkPoint[] | null, now: number) => {
@@ -56,8 +88,10 @@ export function useSitStandGame() {
   const retry = camera.retry
 
   const restart = useCallback(() => {
+    recordInterruption('restart')
     // Update the screen ref first so stale pose callbacks cannot change a reset round.
     setScreen('safety')
+    startedAt.current = null
     setCameraEnabled(false)
     setAcknowledgements([false, false, false])
     tracker.current.reset()
@@ -67,7 +101,7 @@ export function useSitStandGame() {
     trackingRef.current = initialTracking
     setTracking(initialTracking)
     retry()
-  }, [setScreen, retry])
+  }, [setScreen, retry, recordInterruption])
 
   const toggleAcknowledgement = (index: number) => {
     setAcknowledgements((values) => values.map((value, i) => i === index ? !value : value))
@@ -96,6 +130,7 @@ export function useSitStandGame() {
       const remaining = Math.max(0, Math.ceil((countdownEnd - now) / 1000))
       setCountdown(remaining)
       if (!remaining) {
+        startedAt.current = new Date().toISOString()
         setSession(round.current.start(now))
         setScreen('playing')
       }
@@ -110,6 +145,7 @@ export function useSitStandGame() {
   }, [screen, updateRound])
 
   const retryCamera = () => {
+    recordInterruption('camera_retry')
     tracker.current.reset()
     trackingRef.current = initialTracking
     setTracking(initialTracking)

@@ -26,3 +26,4 @@ public/mediapipe/wasm/
 *.njsproj
 *.sln
 *.sw?
+.motion-in-bloom-device.local

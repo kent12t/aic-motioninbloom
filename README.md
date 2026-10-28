@@ -136,3 +136,28 @@ Before booth use, manually check permission/setup, seated calibration, countdown
 `useMotionInBloomGame`, `CameraPanel`, and `MissionPanel`/`TaskList` are remnants of the older three-task flow, not the active application. Shared MediaPipe landmark indices remain in `src/types/game.ts`.
 
 The `public/videos/*-bud.png` and `*-bloom.png` files are transparent first/last-frame stills decoded from the matching WebM with FFmpeg's `libvpx-vp9` decoder. `*-flower.png` is the cropped, 600-pixel-high bloom used in result pots. Keep these derivatives in sync when replacing a video; they support failed-playback fallback and stable, consistently fitted result flowers.
+# Local game analytics
+
+`npm run dev` and `npm run preview` automatically save finished and interrupted games when opened on
+`localhost`, `127.0.0.1`, or `[::1]`. After a production build, use `npm run preview`
+for collection; a plain static server cannot write results.
+
+Results append to `offline-results/motion-in-bloom-<device-id>.csv` at the project
+root. The folder/file are created on the first recorded game and survive server
+restarts. CSVs can be committed or edited locally. Keep the Git-ignored
+`.motion-in-bloom-device.local` file to continue using the same CSV; deleting it
+creates a new installation ID/file on the next finished game.
+
+Columns: `completed_cycles`, `target_cycles` (5), `outcome` (`fast`, `standard`,
+`incomplete`), `time_taken_seconds` (raw gameplay time, excluding countdown), and
+`time_start_iso` (UTC gameplay start), `status` (`finished`/`interrupted`), and
+`interruption_reason` (blank for finished games; otherwise `restart`, `camera_retry`,
+or `page_exit`). Timeouts and interrupted started rounds are included. Leaving or
+reloading uses a keepalive request, which is best effort; browser/process crashes
+cannot be guaranteed. Setup/countdown exits are not gameplay rounds.
+No language, personal details, camera images, or landmarks are stored.
+Hosted domains and LAN IP addresses do not send analytics. The endpoint accepts
+loopback requests only; write errors appear in browser/server consoles without
+interrupting play. There is no retry queue or cloud analytics service.
+
+Run `npm run test:analytics` for schema, CSV persistence, and endpoint checks.

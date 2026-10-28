@@ -6,6 +6,7 @@
   "scripts": {
     "prepare:pose": "node scripts/prepare-pose-assets.mjs",
     "test:tracking": "node --test scripts/tracking.test.mjs",
+    "test:analytics": "node --test scripts/analytics.test.mjs",
     "test:smoke": "playwright test",
     "check:dist": "node scripts/check-dist.mjs",
     "predev": "npm run prepare:pose",

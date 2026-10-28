@@ -232,6 +232,12 @@ Target approximately three seconds per bloom, normalized to each clip's duration
 
 ## 7. Verification checklist
 
+### Local analytics
+
+- On localhost only, automatically append one CSV row per finished or interrupted started round (including timeouts) through the local Vite development/preview server. No controls, downloads, or changes to the player-facing flow.
+- Record completed cycles, target cycles, internal outcome, raw elapsed gameplay seconds, UTC gameplay start time, status (`finished`/`interrupted`), and interruption reason; exclude countdown/setup time. Record started rounds interrupted by restart, camera retry, or page exit. Page-exit delivery is best effort; browser/process crashes cannot be guaranteed.
+- Use a persistent, Git-ignored installation ID and a per-device CSV under `offline-results/`. Do not collect language, personal details, images, or pose landmarks. Hosted/LAN deployments do not send analytics.
+
 For applicable UI/gameplay changes:
 
 - Check the exact four brand colors and local font loading; every Windsor text element is horizontally scaled to 80% without shrinking its parent control.
@@ -248,6 +254,8 @@ For applicable UI/gameplay changes:
 ## 8. Implementation status
 
 Implemented:
+
+- Localhost-only result CSV logging with persistent installation identity, serialized writes, validated loopback-only endpoint, and dev/preview support. Logging runs at the guarded results transition, not a React effect, avoiding StrictMode duplicate rows.
 
 - Camera setup uses a 3:2 display-only crop (full-height fitting for narrower feeds), identical video/overlay transforms, exact short framing copy, and a player-width-derived inference mask/guide held fixed after acquisition. The detector initializes on load independently of camera access; Check camera activates the camera and background tracking, not the safety checkboxes.
 
@@ -271,6 +279,8 @@ Implemented:
 - Home/play-again clear acknowledgements, baseline, timers, video, and flower state. Camera tracks/detector are cleaned up at results and full restart.
 
 Verification performed during implementation:
+
+- Local analytics (2026-10-28): lint, production build/typecheck, all 33 tracking/round tests, and three analytics tests passed. Analytics checks cover outcome/deadline validation, interruption reasons, local hostname checks, concurrent CSV writes, installation identity reuse after writer restart, valid HTTP saves, and rejection of malformed, oversized, and cross-origin requests. Browser navigation/keepalive delivery, dev/preview integration, and real-camera interrupted gameplay have not been verified in a browser.
 
 - Camera UX/startup (2026-10-28): lint, production build/typecheck, all 33 synthetic tracking/round tests, all 11 Chromium smoke tests against the final build, and diff whitespace review passed. Browser coverage checks no camera access from checkbox changes, explicit Check camera startup, actual local detector inference, background frame processing after dismissal, retained stream/video across setup and instructions, disabled uncalibrated Play now, a 3:2 preview, and modal bounds/focus/retry at 390 × 844, 1440 × 900, and 900 × 500. Synthetic coverage checks player-width guide narrowing and persistence through movement/loss. Real-person framing, adaptive-mask tracking quality, landscape side-crop alignment, perceived startup latency, and countdown/gameplay on booth hardware remain unverified.
 
