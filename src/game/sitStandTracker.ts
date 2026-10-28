@@ -8,6 +8,7 @@ interface Measurement {
   anchors: Anchors
   torso: number | null
   gap: number | null
+  scale: number | null
 }
 interface Baseline {
   anchors: Anchors
@@ -46,14 +47,23 @@ function measure(points: LandmarkPoint[], baseline: Baseline | null): Measuremen
   }
   const hips = anchor([LANDMARK.LEFT_HIP, LANDMARK.RIGHT_HIP], 'hips')
   const shoulders = anchor([LANDMARK.LEFT_SHOULDER, LANDMARK.RIGHT_SHOULDER], 'shoulders')
-  const head = anchor([LANDMARK.NOSE], 'head')
+  const head = anchor([LANDMARK.NOSE], 'head') ?? anchor([7, 8], 'head')
   if (!hips && !shoulders && !head) return null
   const torso = hips && shoulders ? hips.y - shoulders.y : null
   if (torso !== null && (torso < 0.08 || (baseline && (
     torso / baseline.torso <= TRACKING.torsoScale.min
     || torso / baseline.torso >= TRACKING.torsoScale.max)))) return null
   const knees = anchor([LANDMARK.LEFT_KNEE, LANDMARK.RIGHT_KNEE])
-  return { anchors: { hips, shoulders, head }, torso,
+  const pairWidth = (left: number, right: number) => anchor([left, right])
+    ? Math.abs(points[left].x - points[right].x) : 0
+  const shoulderWidth = pairWidth(LANDMARK.LEFT_SHOULDER, LANDMARK.RIGHT_SHOULDER)
+  const headWidth = pairWidth(7, 8)
+  // Estimate the fixed movement scale only when the torso is unavailable.
+  // These approximations keep head-only/shoulder-only setup proportional to
+  // apparent player size rather than using an arbitrary screen distance.
+  const scale = torso ?? (shoulderWidth >= 0.08 ? shoulderWidth * 1.15
+    : headWidth >= 0.075 ? headWidth * 2.5 : null)
+  return { anchors: { hips, shoulders, head }, torso, scale,
     gap: knees && hips && torso ? (knees.y - hips.y) / torso : null }
 }
 
@@ -127,11 +137,12 @@ export class SitStandTracker {
       // an existing baseline or treat calibration itself as a repetition.
       const calibrationMs = playing ? TRACKING.playingCalibrationMs : TRACKING.calibrationMs
       const calibrationFrames = playing ? TRACKING.playingCalibrationFrames : 15
-      const { hips, shoulders } = measured.anchors
-      if (!hips || !shoulders || !measured.torso) {
+      const { shoulders, head } = measured.anchors
+      const primary = shoulders ?? head
+      if (!primary || Math.abs(primary.x - 0.5) > 0.12 || !measured.scale) {
         this.samples = []
         this.calibrationSince = now
-        return feedback('Sit inside the guide with shoulders and hips visible.', true)
+        return feedback('Sit centred with your head or shoulders inside the guide.', true)
       }
       // Use knees when available for setup, but never make them a counting gate.
       if (measured.gap !== null && (measured.gap > TRACKING.seatedGapRange.max
@@ -164,8 +175,13 @@ export class SitStandTracker {
           y: values.reduce((sum, p) => sum + p.y / values.length, 0),
         }
       }
+      if (!anchorNames.some(name => anchors[name])) {
+        this.samples = []
+        this.calibrationSince = now
+        return feedback('Keep your head or shoulders visible while we get ready.', true)
+      }
       this.baseline = { anchors,
-        torso: this.samples.reduce((sum, p) => sum + p.torso! / this.samples.length, 0) }
+        torso: this.samples.reduce((sum, p) => sum + p.scale! / this.samples.length, 0) }
       this.samples = []
       this.posture = 'sitting'
     }

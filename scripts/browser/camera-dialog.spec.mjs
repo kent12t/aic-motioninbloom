@@ -16,7 +16,8 @@ for (const viewport of [
     })
     await page.goto('/')
     await page.getByRole('checkbox').first().check()
-    const opener = page.getByRole('button', { name: 'Set up camera' })
+    await expect.poll(() => page.evaluate(() => window.cameraAttempts)).toBe(0)
+    const opener = page.locator('.setup-status button')
     await opener.click()
     const dialog = page.getByRole('dialog', { name: 'Check your camera' })
     const close = dialog.getByRole('button', { name: 'Close camera check' })
@@ -60,7 +61,7 @@ for (const viewport of [
   })
 }
 
-test('camera stream and video persist through setup dialog and countdown', async ({ page }) => {
+test('camera starts only on request and persists through setup and instructions with uncalibrated start blocked', async ({ page }) => {
   // Real model initialization/inference can block the page on software-only CI.
   // Keep the normal smoke-test budget for the other tests.
   test.setTimeout(90_000)
@@ -89,6 +90,8 @@ test('camera stream and video persist through setup dialog and countdown', async
   })
   await page.goto('/')
   await page.getByRole('checkbox').first().check()
+  expect(await page.evaluate(() => window.cameraAttempts)).toBe(0)
+  await page.getByRole('button', { name: 'Check camera' }).click()
   await expect.poll(() => page.locator('.camera-stage video').evaluate((video) => video.readyState)).toBeGreaterThanOrEqual(2)
   // The guide is resized only after detectForVideo succeeds. Video readiness
   // alone does not prove that the asynchronous detector has initialized.
@@ -96,6 +99,9 @@ test('camera stream and video persist through setup dialog and countdown', async
     timeout: 60_000,
     message: 'the real local MediaPipe detector should process a camera frame',
   }).toBe(720)
+  const preview = await page.locator('.camera-stage').boundingBox()
+  expect(preview.width / preview.height).toBeCloseTo(1.5, 2)
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
   // Background calibration must keep receiving new frames with the dialog closed.
   const initialFrames = await page.evaluate(() => window.processedCameraFrames)
   await page.evaluate(() => {
@@ -115,9 +121,8 @@ test('camera stream and video persist through setup dialog and countdown', async
   await page.getByRole('button', { name: 'I am ready to start' }).click()
   await page.getByRole('button', { name: 'Check camera' }).click()
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Play now' }).click()
-  await expect(page.locator('.stage-countdown .camera-panel')).toBeVisible()
-  await expect(page.locator('.camera-stage video')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Play now' })).toBeDisabled()
+  await expect(page.locator('.stage-instructions')).toBeVisible()
   expect(await page.evaluate(() => ({
     sameVideo: window.originalVideo === document.querySelector('.camera-stage video'),
     sameStream: window.originalVideo.srcObject === window.cameraStream,

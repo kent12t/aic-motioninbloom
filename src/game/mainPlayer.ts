@@ -25,6 +25,17 @@ export class MainPlayer {
   private reference: (Anchor | null)[] | null = null
   private pending: { anchors: (Anchor | null)[]; since: number; frames: number } | null = null
 
+  get zone(): { left: number; right: number; top: number; bottom: number } {
+    const primary = this.reference?.[0] ?? this.reference?.[2]
+    if (!primary) return { ...TRACKING.zone }
+    const bodyWidth = this.reference?.[0] ? primary.width : primary.width * 2.2
+    // Fixed after acquisition: do not chase bystanders or shrink during a rise.
+    const half = Math.min(0.3, Math.max(0.16, bodyWidth * 0.8 + 0.06))
+    return { ...TRACKING.zone,
+      left: Math.max(TRACKING.zone.left, primary.x - half),
+      right: Math.min(TRACKING.zone.right, primary.x + half) }
+  }
+
   select(poses: LandmarkPoint[][], now: number): LandmarkPoint[] | null {
     const candidates = poses.map(points => ({ points, anchors: anchors(points) }))
     const distance = (current: (Anchor | null)[], reference: (Anchor | null)[]) => {
@@ -52,11 +63,14 @@ export class MainPlayer {
     }
 
     const ranked = candidates.flatMap(c => {
-      const [shoulders, hips] = c.anchors
-      if (!shoulders || !hips || shoulders.width < 0.08
-        || hips.y - shoulders.y < 0.12
-        || Math.abs(shoulders.x - 0.5) > 0.12 || Math.abs(hips.x - 0.5) > 0.12) return []
-      return [{ ...c, score: shoulders.width - Math.abs(shoulders.x - 0.5) }]
+      const [shoulders, , head] = c.anchors
+      // A close, centred shoulder or head pair is enough. Never acquire from
+      // one isolated point: a pair supplies both position and apparent size.
+      const primary = shoulders ?? head
+      if (!primary || primary.width < (shoulders ? 0.08 : 0.075)
+        || Math.abs(primary.x - 0.5) > 0.12) return []
+      const width = shoulders ? primary.width : primary.width * 2.2
+      return [{ ...c, score: width - Math.abs(primary.x - 0.5) }]
     }).sort((a, b) => b.score - a.score)
     const best = ranked[0]
     if (!best || (ranked[1] && best.score - ranked[1].score < 0.025)) {

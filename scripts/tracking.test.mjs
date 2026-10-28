@@ -58,13 +58,43 @@ test('main player prefers a stable central foreground torso, independent of dete
   assert.equal(selector.select([background, main], 200), main)
 })
 
-test('faces, small distant bodies, off-centre people and ambiguous players cannot acquire', () => {
+test('isolated points, small distant bodies, off-centre people and ambiguous players cannot acquire', () => {
   const face = playerPose()
   for (const i of [11, 12, 23, 24]) face[i].visibility = 0
+  face[7].visibility = 0
   for (const poses of [[face], [playerPose(0.3)], [playerPose(1, 0.7)],
     [playerPose(1, 0.46), playerPose(1, 0.54)]]) {
     const selector = new MainPlayer()
     for (let t = 0; t < 2000; t += 50) assert.equal(selector.select(poses, t), null)
+  }
+})
+
+test('centred head-only and shoulder-only players acquire and calibrate before playing', () => {
+  for (const indices of [[0, 7, 8], [7, 8], [11, 12]]) {
+    const selector = new MainPlayer()
+    const tracker = new SitStandTracker()
+    const seated = playerPose()
+    for (let i = 0; i < seated.length; i++) if (!indices.includes(i)) seated[i].visibility = 0
+    let result
+    for (let t = 0; t <= 2000; t += 50) {
+      result = tracker.update(selector.select([seated], t), t, false)
+      assert.equal(result.repetition, false)
+      if (t < 1500) assert.equal(result.ready, false)
+    }
+    assert.equal(result.ready, true)
+    const risen = seated.map(p => ({ ...p, y: p.y - 0.22 }))
+    let stood = false
+    let repetitions = 0
+    for (let t = 2050; t < 2550; t += 50) {
+      result = tracker.update(selector.select([risen], t), t, true)
+      stood ||= result.stood
+    }
+    for (let t = 2550; t < 3100; t += 50) {
+      result = tracker.update(selector.select([seated], t), t, true)
+      repetitions += Number(result.repetition)
+    }
+    assert.equal(stood, true)
+    assert.equal(repetitions, 1)
   }
 })
 
@@ -78,6 +108,19 @@ test('player lock survives long absence without accepting a smaller or lateral b
   }
   assert.equal(selector.select([main], 60100), main)
   assert.equal(selector.select([main, playerPose(1, 0.51)], 60200), null)
+})
+
+test('player acquisition narrows the inference guide and retains it during motion and loss', () => {
+  const selector = new MainPlayer()
+  assert.deepEqual(selector.zone, { left: 0.2, right: 0.8, top: 0.03, bottom: 0.97 })
+  lockPlayer(selector, playerPose())
+  const zone = selector.zone
+  assert.ok(zone.left > 0.2 && zone.right < 0.8)
+  assert.ok(zone.left < 0.39 && zone.right > 0.61)
+  selector.select([playerPose(1, 0.52, 0.2)], 200)
+  assert.deepEqual(selector.zone, zone)
+  selector.select([], 60000)
+  assert.deepEqual(selector.zone, zone)
 })
 
 test('vertical motion and clipped upper body retain the player, but hidden anchors do not', () => {

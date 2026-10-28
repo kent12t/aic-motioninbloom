@@ -199,7 +199,7 @@ h1 .windsor { display: block; width: 125%; margin-left: -12.5%; }
 .camera-dialog-close { display: grid; place-items: center; flex: 0 0 10cqw; width: 10cqw; height: 10cqw; padding: 2.8cqw; border: .25cqw solid var(--color-purple); border-radius: 50%; color: var(--color-purple); background: transparent; }
 .camera-dialog-close:hover { background: rgb(113 48 139 / .1); }
 .camera-dialog-close img { width: 100%; height: 100%; }
-.camera-setup .camera-stage { height: 62cqw; border-radius: 3cqw; background: var(--color-ink-purple); }
+.camera-setup .camera-stage { height: auto; aspect-ratio: 3 / 2; border-radius: 3cqw; background: var(--color-ink-purple); }
 .camera-unavailable { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw; color: var(--color-background); font-size: 3.5cqw; background: var(--color-ink-purple); }
 .camera-unavailable img { width: 14cqw; height: 14cqw; }
 .camera-dialog-status { margin-top: 4cqw; color: var(--color-purple); }

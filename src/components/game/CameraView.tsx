@@ -1,4 +1,4 @@
-import { useEffect, useRef, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { PoseStatus } from './PoseStatus'
 import type { DetectedPose } from '../../game/sitStandTracker'
 
@@ -17,8 +17,9 @@ interface CameraViewProps {
   setup?: boolean
 }
 
-export function CameraView({ videoRef, overlayRef, pose, loading, message, calibrationProgress, error, onRetry, onClose, ready, hidden, setup }: CameraViewProps) {
+export function CameraView({ videoRef, overlayRef, pose, loading, calibrationProgress, error, onRetry, onClose, ready, hidden, setup }: CameraViewProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const [wideFeed, setWideFeed] = useState(true)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -59,8 +60,9 @@ export function CameraView({ videoRef, overlayRef, pose, loading, message, calib
           </button>
         </header>}
         <div className="camera-stage">
-          <video ref={videoRef} autoPlay playsInline muted />
-          <canvas ref={overlayRef} className="camera-guide" />
+          <video ref={videoRef} autoPlay playsInline muted style={{ objectFit: wideFeed ? 'cover' : 'contain' }}
+            onLoadedMetadata={event => setWideFeed(event.currentTarget.videoWidth / event.currentTarget.videoHeight >= 1.5)} />
+          <canvas ref={overlayRef} className="camera-guide" style={{ objectFit: wideFeed ? 'cover' : 'contain' }} />
           {setup && error && <div className="camera-unavailable" aria-hidden="true">
             <img src="/camera-unavailable.svg" alt="" />
             <span>Let’s get you connected</span>
@@ -72,8 +74,8 @@ export function CameraView({ videoRef, overlayRef, pose, loading, message, calib
             <p role={hidden ? undefined : 'status'}><span className="camera-status-dot" aria-hidden="true" />{error ? 'Camera needs attention' : ready ? 'You’re in position!' : 'Finding your seated position'}</p>
             {!error && calibrationProgress !== undefined && <progress className="calibration-progress" value={calibrationProgress} max={1} aria-label="Seated calibration" />}
           </div>
-          <p id="camera-dialog-guidance" className="camera-dialog-guidance">Stay seated and keep your shoulders and hips inside the guide.</p>
-          <p className="camera-dialog-feedback">{error || (ready ? 'All set. We’ll keep the camera ready while you continue.' : message)}</p>
+          <p id="camera-dialog-guidance" className="camera-dialog-guidance">Stay seated and centered. Keep your head or shoulders inside the guide.</p>
+          {error && <p className="camera-dialog-feedback">{error}</p>}
           <div className="camera-dialog-actions">
             {error && <button className="camera-retry-button" onClick={onRetry}>Retry camera</button>}
             <button className="primary-button camera-done-button" onClick={onClose}><span className="windsor">Done</span></button>

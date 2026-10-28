@@ -1,7 +1,6 @@
 export const GAME = {
-  // TEMPORARY: allow screen debugging without a camera/seated baseline.
-  // Restore to true to gate Play now and countdown on successful calibration.
-  requireCalibration: false,
+  // Require initial detection before Play now and throughout countdown.
+  requireCalibration: true,
   target: 5,
   seconds: 40,
   countdown: 3,

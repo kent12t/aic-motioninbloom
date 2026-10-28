@@ -8,7 +8,7 @@ import { usePoseCamera } from './usePoseCamera'
 export type GameScreen = 'safety' | 'instructions' | 'countdown' | 'playing' | 'results'
 const initialTracking: TrackingFeedback = {
   pose: 'unknown',
-  ready: false, progress: 0, message: 'Sit inside the guide with shoulders and hips visible.',
+  ready: false, progress: 0, message: 'Stay seated and centered. Keep your head or shoulders inside the guide.',
   accepted: false, repetition: false, stood: false, rising: false,
 }
 
@@ -70,7 +70,6 @@ export function useSitStandGame() {
   }, [setScreen, retry])
 
   const toggleAcknowledgement = (index: number) => {
-    if (!acknowledgements[index]) setCameraEnabled(true)
     setAcknowledgements((values) => values.map((value, i) => i === index ? !value : value))
   }
   const showInstructions = () => {
@@ -119,6 +118,7 @@ export function useSitStandGame() {
   }
 
   return { screen, acknowledgements, cameraEnabled, countdown, session, tracking,
+    enableCamera: () => setCameraEnabled(true),
     canStart: !GAME.requireCalibration || (camera.status === 'ready' && tracking.ready),
     camera, toggleAcknowledgement, showInstructions, startGame, restart, retryCamera }
 }

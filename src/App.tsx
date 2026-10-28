@@ -32,9 +32,9 @@ export function App() {
         message={cameraMessage} calibrationProgress={preparing ? tracking.progress : undefined}
         error={camera.error} onRetry={game.retryCamera} onClose={() => setShowSetup(false)} ready={ready} />
 
-      {preparing && cameraEnabled && <div className="setup-status">
-        <p role="status">{camera.error ? 'Camera needs attention.' : ready ? 'Seated position ready.' : cameraMessage}</p>
-        <button onClick={() => setShowSetup(true)} aria-haspopup="dialog" aria-controls="setup-camera-dialog" aria-expanded={showSetup}>
+      {preparing && <div className="setup-status">
+        {cameraEnabled && <p role="status">{camera.error ? 'Camera needs attention.' : ready ? 'Seated position ready.' : cameraMessage}</p>}
+        <button onClick={() => { game.enableCamera(); setShowSetup(true) }} aria-haspopup="dialog" aria-controls="setup-camera-dialog" aria-expanded={showSetup}>
           {camera.error ? 'Set up camera' : 'Check camera'}
         </button>
       </div>}

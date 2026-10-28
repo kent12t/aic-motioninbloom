@@ -14,6 +14,28 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [error, setError] = useState('')
   const [generation, setGeneration] = useState(0)
+  const [detectorGeneration, setDetectorGeneration] = useState(0)
+  const detectorPromise = useRef<ReturnType<typeof createPoseDetector> | null>(null)
+  const detectorFailed = useRef(false)
+
+  // Initialize the actual WASM/model instance on load, without camera access.
+  // This effect owns the detector; camera sessions only borrow it.
+  useEffect(() => {
+    let active = true
+    let loaded: Awaited<ReturnType<typeof createPoseDetector>> | null = null
+    detectorFailed.current = false
+    const promise = createPoseDetector()
+    detectorPromise.current = promise
+    void promise.then(detector => {
+      if (!active) detector.close()
+      else loaded = detector
+    }).catch(() => { if (active) detectorFailed.current = true }) // Report when camera is requested.
+    return () => {
+      active = false
+      loaded?.close()
+      if (detectorPromise.current === promise) detectorPromise.current = null
+    }
+  }, [detectorGeneration])
 
   useEffect(() => { onPoseRef.current = onPose }, [onPose])
 
@@ -40,7 +62,6 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
       if (!active) return
       cancelAnimationFrame(frame)
       stream?.getTracks().forEach((track) => track.stop())
-      detector?.close()
       detector = null
       streamRef.current = null
       setError(cause instanceof Error ? cause.message : 'Camera unavailable')
@@ -60,14 +81,14 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
         try {
           lastInference = now
           lastVideoFrame = videoFrame
-          maskCameraFrame(video, input)
+          maskCameraFrame(video, input, player.zone)
           const result = detector.detectForVideo(input, now)
           const poses = result.landmarks.map(pose => pose.map(({ x, y, visibility }) => ({
             x, y, visibility: visibility ?? 0,
           })))
           const points = player.select(poses, now)
           const accepted = onPoseRef.current(points, now)
-          if (overlayRef.current) drawCameraGuide(overlayRef.current, video, points, accepted)
+          if (overlayRef.current) drawCameraGuide(overlayRef.current, video, points, accepted, player.zone)
         } catch (cause) {
           fail(cause)
           return
@@ -94,8 +115,10 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
           await videoRef.current.play()
         }
         if (!active) return
-        detector = await createPoseDetector()
-        if (!active) { detector.close(); detector = null; return }
+        const prepared = await detectorPromise.current
+        if (!active) return
+        if (!prepared) throw new Error('Pose detector is not ready. Please retry.')
+        detector = prepared
         setStatus('ready')
         frame = requestAnimationFrame(animate)
       } catch (cause) { fail(cause) }
@@ -104,7 +127,7 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     return () => {
       active = false
       cancelAnimationFrame(frame)
-      detector?.close()
+      detector = null
       stream?.getTracks().forEach((track) => track.stop())
       if (streamRef.current === stream) streamRef.current = null
     }
@@ -113,6 +136,7 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
   const retry = useCallback(() => {
     setStatus('loading')
     setError('')
+    if (detectorFailed.current) setDetectorGeneration(value => value + 1)
     setGeneration((value) => value + 1)
   }, [])
 

@@ -24,13 +24,13 @@ export async function createPoseDetector() {
 }
 
 // The detector receives the masked image, not the original webcam frame.
-export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement) {
+export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, zone: { left: number; right: number; top: number; bottom: number } = TRACKING.zone) {
   if (canvas.width !== 640) canvas.width = 640
   const height = Math.round(640 * video.videoHeight / video.videoWidth)
   if (canvas.height !== height) canvas.height = height
   const context = canvas.getContext('2d')
   if (!context) throw new Error('Could not create camera processing canvas.')
-  const { left, right, top, bottom } = TRACKING.zone
+  const { left, right, top, bottom } = zone
   context.fillStyle = '#000'
   context.fillRect(0, 0, canvas.width, canvas.height)
   context.drawImage(video,
@@ -41,13 +41,13 @@ export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasEleme
 }
 
 export function drawCameraGuide(canvas: HTMLCanvasElement, video: HTMLVideoElement,
-  points: LandmarkPoint[] | null, accepted: boolean) {
+  points: LandmarkPoint[] | null, accepted: boolean, zone: { left: number; right: number; top: number; bottom: number } = TRACKING.zone) {
   if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth
   if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight
   const context = canvas.getContext('2d')
   if (!context) return
   const { width: w, height: h } = canvas
-  const { left, right, top, bottom } = TRACKING.zone
+  const { left, right, top, bottom } = zone
   context.clearRect(0, 0, w, h)
   context.fillStyle = 'rgba(0,0,0,.7)'
   context.fillRect(0, 0, w, h)

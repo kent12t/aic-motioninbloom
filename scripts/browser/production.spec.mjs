@@ -28,6 +28,10 @@ test('production app loads, enforces acknowledgements, and restarts cleanly', as
   await start.click()
   await expect(page.getByRole('heading', { name: 'How Strong Are Your Legs?' })).toBeVisible()
   await expect(page.getByRole('listitem')).toHaveCount(4)
+  await expect(page.getByRole('button', { name: 'Play now' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Check camera' }).click()
+  await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Camera needs attention')
+  await page.getByRole('button', { name: 'Done', exact: true }).click()
   await expect(page.getByRole('status')).toHaveText('Camera needs attention.')
   await page.evaluate(async () => {
     await document.fonts.ready
