@@ -30,7 +30,8 @@ export function App() {
       <CameraView videoRef={camera.attachVideo} overlayRef={camera.overlayRef} pose={tracking.pose} loading={camera.status === 'loading'}
         hidden={!cameraEnabled || screen === 'results' || (preparing && !showSetup)} setup={preparing}
         message={cameraMessage} calibrationProgress={preparing ? tracking.progress : undefined}
-        error={camera.error} onRetry={game.retryCamera} onClose={() => setShowSetup(false)} ready={ready} />
+        error={camera.error} onRetry={game.retryCamera} onClose={() => setShowSetup(false)} ready={ready}
+        rotated={game.cameraRotated} onRotate={game.rotateCamera} />
 
       {preparing && <div className="setup-status">
         {cameraEnabled && <p role="status">{camera.error ? 'Camera needs attention.' : ready ? 'Seated position ready.' : cameraMessage}</p>}

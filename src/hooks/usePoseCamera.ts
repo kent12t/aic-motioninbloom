@@ -6,7 +6,9 @@ import type { LandmarkPoint } from '../types/game'
 
 type PoseFrame = (points: LandmarkPoint[] | null, now: number) => boolean
 
-export function usePoseCamera(onPose: PoseFrame, enabled = true) {
+export function usePoseCamera(onPose: PoseFrame, enabled = true, rotated = false) {
+  const rotationRef = useRef(rotated)
+  useEffect(() => { rotationRef.current = rotated }, [rotated])
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -57,7 +59,8 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     let lastVideoFrame = ''
     let lastMissingReport = -Infinity
     const input = document.createElement('canvas')
-    const player = new MainPlayer()
+    let player = new MainPlayer()
+    let inputRotated = rotationRef.current
     const fail = (cause: unknown) => {
       if (!active) return
       cancelAnimationFrame(frame)
@@ -71,6 +74,13 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
     const animate = (now: number) => {
       if (!active) return
       const video = videoRef.current
+      if (inputRotated !== rotationRef.current) {
+        inputRotated = rotationRef.current
+        player = new MainPlayer()
+        lastVideoFrame = ''
+        const overlay = overlayRef.current
+        overlay?.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height)
+      }
       // A live stream's media clock can advance without a new camera frame
       // (for example, a static canvas capture). Do not infer the same decoded
       // frame on every animation tick, especially with software-only WebGL.
@@ -81,7 +91,7 @@ export function usePoseCamera(onPose: PoseFrame, enabled = true) {
         try {
           lastInference = now
           lastVideoFrame = videoFrame
-          maskCameraFrame(video, input, player.zone)
+          maskCameraFrame(video, input, player.zone, inputRotated)
           const result = detector.detectForVideo(input, now)
           const poses = result.landmarks.map(pose => pose.map(({ x, y, visibility }) => ({
             x, y, visibility: visibility ?? 0,

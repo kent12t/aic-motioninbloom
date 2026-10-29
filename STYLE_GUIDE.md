@@ -183,6 +183,8 @@ The supplied result QR code asset `/qrcode.png` is shared as-is on every result 
 
 ### Flow and seated calibration
 
+- Camera setup includes a keyboard-accessible “Rotate 180°” toggle for physically inverted webcams. Rotate the actual detector input before masking/inference as well as the mirrored preview; keep the guide in upright detection coordinates. Changing orientation clears player acquisition and seated calibration without restarting the stream. Preserve orientation across retry and play-again within the current page session; a fresh page defaults to unrotated.
+
 `Safety check → Instructions → Countdown → Playing → Results`
 
 - The player starts **seated**. Initialize the ML model/WASM detector on page load without requesting camera permission or running camera inference. Only pressing “Check camera” / “Set up camera” starts camera access and detection. Safety checkbox changes must not activate the camera. Keep detection running in the background after the camera dialog closes and across instructions/countdown/play; stop camera tracks at results or restart, while keeping the model ready for another camera session.
@@ -255,6 +257,8 @@ For applicable UI/gameplay changes:
 
 Implemented:
 
+- Camera setup 180° rotation toggle corrects preview and masked inference, resets player acquisition/calibration, and retains the stream and session orientation.
+
 - Localhost-only result CSV logging with persistent installation identity, serialized writes, validated loopback-only endpoint, and dev/preview support. Logging runs at the guarded results transition, not a React effect, avoiding StrictMode duplicate rows.
 
 - Camera setup uses a 3:2 display-only crop (full-height fitting for narrower feeds), identical video/overlay transforms, exact short framing copy, and a player-width-derived inference mask/guide held fixed after acquisition. The detector initializes on load independently of camera access; Check camera activates the camera and background tracking, not the safety checkboxes.
@@ -279,6 +283,8 @@ Implemented:
 - Home/play-again clear acknowledgements, baseline, timers, video, and flower state. Camera tracks/detector are cleaned up at results and full restart.
 
 Verification performed during implementation:
+
+- Camera rotation (2026-10-29): lint, production build/typecheck, and all 33 synthetic tracking/round tests passed. Reviewed upright-mask mapping, preview/guide transforms, calibration reset, and diff. Browser layout, rotated-camera inference, and real-person calibration/gameplay remain unverified.
 
 - Local analytics (2026-10-28): lint, production build/typecheck, all 33 tracking/round tests, and three analytics tests passed. Analytics checks cover outcome/deadline validation, interruption reasons, local hostname checks, concurrent CSV writes, installation identity reuse after writer restart, valid HTTP saves, and rejection of malformed, oversized, and cross-origin requests. Browser navigation/keepalive delivery, dev/preview integration, and real-camera interrupted gameplay have not been verified in a browser.
 

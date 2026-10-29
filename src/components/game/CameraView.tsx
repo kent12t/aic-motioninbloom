@@ -15,9 +15,11 @@ interface CameraViewProps {
   ready: boolean
   hidden?: boolean
   setup?: boolean
+  rotated?: boolean
+  onRotate?: () => void
 }
 
-export function CameraView({ videoRef, overlayRef, pose, loading, calibrationProgress, error, onRetry, onClose, ready, hidden, setup }: CameraViewProps) {
+export function CameraView({ videoRef, overlayRef, pose, loading, calibrationProgress, error, onRetry, onClose, ready, hidden, setup, rotated, onRotate }: CameraViewProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [wideFeed, setWideFeed] = useState(true)
 
@@ -60,7 +62,7 @@ export function CameraView({ videoRef, overlayRef, pose, loading, calibrationPro
           </button>
         </header>}
         <div className="camera-stage">
-          <video ref={videoRef} autoPlay playsInline muted style={{ objectFit: wideFeed ? 'cover' : 'contain' }}
+          <video ref={videoRef} autoPlay playsInline muted style={{ objectFit: wideFeed ? 'cover' : 'contain', transform: rotated ? 'scaleX(-1) rotate(180deg)' : 'scaleX(-1)' }}
             onLoadedMetadata={event => setWideFeed(event.currentTarget.videoWidth / event.currentTarget.videoHeight >= 1.5)} />
           <canvas ref={overlayRef} className="camera-guide" style={{ objectFit: wideFeed ? 'cover' : 'contain' }} />
           {setup && error && <div className="camera-unavailable" aria-hidden="true">
@@ -77,6 +79,7 @@ export function CameraView({ videoRef, overlayRef, pose, loading, calibrationPro
           <p id="camera-dialog-guidance" className="camera-dialog-guidance">Stay seated and centered. Keep your head or shoulders inside the guide.</p>
           {error && <p className="camera-dialog-feedback">{error}</p>}
           <div className="camera-dialog-actions">
+            {onRotate && <button className="camera-retry-button" onClick={onRotate} aria-pressed={!!rotated}>Rotate 180°</button>}
             {error && <button className="camera-retry-button" onClick={onRetry}>Retry camera</button>}
             <button className="primary-button camera-done-button" onClick={onClose}><span className="windsor">Done</span></button>
           </div>

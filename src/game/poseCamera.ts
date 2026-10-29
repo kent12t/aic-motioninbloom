@@ -24,7 +24,7 @@ export async function createPoseDetector() {
 }
 
 // The detector receives the masked image, not the original webcam frame.
-export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, zone: { left: number; right: number; top: number; bottom: number } = TRACKING.zone) {
+export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasElement, zone: { left: number; right: number; top: number; bottom: number } = TRACKING.zone, rotated = false) {
   if (canvas.width !== 640) canvas.width = 640
   const height = Math.round(640 * video.videoHeight / video.videoWidth)
   if (canvas.height !== height) canvas.height = height
@@ -33,11 +33,20 @@ export function maskCameraFrame(video: HTMLVideoElement, canvas: HTMLCanvasEleme
   const { left, right, top, bottom } = zone
   context.fillStyle = '#000'
   context.fillRect(0, 0, canvas.width, canvas.height)
+  context.save()
+  if (rotated) {
+    context.translate(canvas.width, canvas.height)
+    context.rotate(Math.PI)
+  }
+  // Map the upright mask back to the upside-down sensor before drawing.
+  const sourceLeft = rotated ? 1 - right : left
+  const sourceTop = rotated ? 1 - bottom : top
   context.drawImage(video,
-    left * video.videoWidth, top * video.videoHeight,
+    sourceLeft * video.videoWidth, sourceTop * video.videoHeight,
     (right - left) * video.videoWidth, (bottom - top) * video.videoHeight,
-    left * canvas.width, top * canvas.height,
+    sourceLeft * canvas.width, sourceTop * canvas.height,
     (right - left) * canvas.width, (bottom - top) * canvas.height)
+  context.restore()
 }
 
 export function drawCameraGuide(canvas: HTMLCanvasElement, video: HTMLVideoElement,

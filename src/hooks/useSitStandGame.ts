@@ -22,6 +22,7 @@ export function useSitStandGame() {
   const [screen, setScreenState] = useState<GameScreen>('safety')
   const [acknowledgements, setAcknowledgements] = useState([false, false, false])
   const [cameraEnabled, setCameraEnabled] = useState(false)
+  const [cameraRotated, setCameraRotated] = useState(false)
   const [countdown, setCountdown] = useState<number>(GAME.countdown)
   const [session, setSession] = useState(() => new FlowerRound().state)
   const [tracking, setTracking] = useState(initialTracking)
@@ -84,7 +85,7 @@ export function useSitStandGame() {
     if (playing && feedback.repetition) updateRound(now, 'completed')
     return feedback.accepted
   }, [updateRound])
-  const camera = usePoseCamera(onPose, cameraEnabled && screen !== 'results')
+  const camera = usePoseCamera(onPose, cameraEnabled && screen !== 'results', cameraRotated)
   const retry = camera.retry
 
   const restart = useCallback(() => {
@@ -153,7 +154,15 @@ export function useSitStandGame() {
     camera.retry()
   }
 
-  return { screen, acknowledgements, cameraEnabled, countdown, session, tracking,
+  const rotateCamera = () => {
+    if (screenRef.current !== 'safety' && screenRef.current !== 'instructions') return
+    tracker.current.reset()
+    trackingRef.current = initialTracking
+    setTracking(initialTracking)
+    setCameraRotated(value => !value)
+  }
+
+  return { screen, acknowledgements, cameraEnabled, cameraRotated, rotateCamera, countdown, session, tracking,
     enableCamera: () => setCameraEnabled(true),
     canStart: !GAME.requireCalibration || (camera.status === 'ready' && tracking.ready),
     camera, toggleAcknowledgement, showInstructions, startGame, restart, retryCamera }
