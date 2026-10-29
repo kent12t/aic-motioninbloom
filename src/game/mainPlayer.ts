@@ -26,14 +26,8 @@ export class MainPlayer {
   private pending: { anchors: (Anchor | null)[]; since: number; frames: number } | null = null
 
   get zone(): { left: number; right: number; top: number; bottom: number } {
-    const primary = this.reference?.[0] ?? this.reference?.[2]
-    if (!primary) return { ...TRACKING.zone }
-    const bodyWidth = this.reference?.[0] ? primary.width : primary.width * 2.2
-    // Fixed after acquisition: do not chase bystanders or shrink during a rise.
-    const half = Math.min(0.3, Math.max(0.16, bodyWidth * 0.8 + 0.06))
-    return { ...TRACKING.zone,
-      left: Math.max(TRACKING.zone.left, primary.x - half),
-      right: Math.min(TRACKING.zone.right, primary.x + half) }
+    // Keep the broad mask/guide fixed; player acquisition must never narrow it.
+    return { ...TRACKING.zone }
   }
 
   select(poses: LandmarkPoint[][], now: number): LandmarkPoint[] | null {
@@ -48,7 +42,8 @@ export class MainPlayer {
         const scale = a.width / b.width
         const dx = Math.abs(a.x - b.x)
         // Vertical travel is the game action; lateral travel/size changes are not.
-        if (scale < 0.65 || scale > 1.55 || dx > 0.1 || Math.abs(a.y - b.y) > 0.45) return Infinity
+        if (scale < TRACKING.playerWidthScale.min || scale > TRACKING.playerWidthScale.max
+          || dx > 0.1 || Math.abs(a.y - b.y) > 0.45) return Infinity
         total += dx + Math.abs(Math.log(scale)) * 0.15
         matches++
       }

@@ -110,13 +110,12 @@ test('player lock survives long absence without accepting a smaller or lateral b
   assert.equal(selector.select([main, playerPose(1, 0.51)], 60200), null)
 })
 
-test('player acquisition narrows the inference guide and retains it during motion and loss', () => {
+test('player acquisition keeps the broad inference guide during motion and loss', () => {
   const selector = new MainPlayer()
   assert.deepEqual(selector.zone, { left: 0.2, right: 0.8, top: 0.03, bottom: 0.97 })
   lockPlayer(selector, playerPose())
   const zone = selector.zone
-  assert.ok(zone.left > 0.2 && zone.right < 0.8)
-  assert.ok(zone.left < 0.39 && zone.right > 0.61)
+  assert.deepEqual(zone, { left: 0.2, right: 0.8, top: 0.03, bottom: 0.97 })
   selector.select([playerPose(1, 0.52, 0.2)], 200)
   assert.deepEqual(selector.zone, zone)
   selector.select([], 60000)
@@ -355,17 +354,66 @@ test('clear vertical body movement is enough; knee movement alone cannot add a c
   assert.equal(s.count(), 1)
 })
 
-test('large scale changes and non-finite landmarks are rejected', () => {
+test('torso extension preserves upper-anchor movement; non-finite landmarks are rejected', () => {
   const s = session()
   s.feed(pose(), 2000, false)
   const scaled = pose()
   scaled[11].y = 0.15
   scaled[12].y = 0.15
-  assert.equal(s.feed(scaled, 1000).accepted, false)
+  assert.equal(s.feed(scaled, 1000).accepted, true)
+  assert.equal(s.stands(), 1)
+  s.feed(pose(), 500)
+  assert.equal(s.count(), 1)
   const corrupt = pose()
   for (const p of corrupt) p.visibility = NaN
   assert.equal(s.feed(corrupt, 1000).accepted, false)
+  assert.equal(s.count(), 1)
+})
+
+test('player lock allows standing width expansion but rejects extreme size and lateral changes', () => {
+  const selector = new MainPlayer()
+  const seated = playerPose(0.7)
+  lockPlayer(selector, seated)
+  const standing = playerPose(1.2, 0.5, 0.2)
+  assert.equal(selector.select([standing], 200), standing)
+  assert.equal(selector.select([playerPose(1.4)], 250), null)
+  assert.equal(selector.select([playerPose(0.4)], 300), null)
+  assert.equal(selector.select([playerPose(0.7, 0.65)], 350), null)
+})
+
+test('half-height seated to near-full-height standing counts through selector and torso extension', () => {
+  const selector = new MainPlayer()
+  const tracker = new SitStandTracker()
+  const seated = playerPose(0.7)
+  seated[0].y = 0.48
+  seated[7].y = seated[8].y = 0.48
+  const standing = playerPose(1.2)
+  standing[0].y = standing[7].y = standing[8].y = 0.04
+  standing[11].y = standing[12].y = 0.14
+  standing[23].y = standing[24].y = 0.46
+  standing[25].y = standing[26].y = 0.94
+  let stands = 0
+  let repetitions = 0
+  for (let t = 0; t <= 4000; t += 50) {
+    const points = t < 2200 || t >= 3000 ? seated : standing
+    const result = tracker.update(selector.select([points], t), t, t >= 2200)
+    stands += Number(result.stood)
+    repetitions += Number(result.repetition)
+  }
+  assert.equal(stands, 1)
+  assert.equal(repetitions, 1)
+})
+
+test('implausible hips do not hide a calibrated upper-anchor rise or fabricate a return', () => {
+  const s = session()
+  s.feed(playerPose(), 2000, false)
+  const standing = playerPose(1, 0.5, 0.2)
+  standing[23].y = standing[24].y = standing[11].y + 0.02
+  assert.equal(s.feed(standing, 500).accepted, true)
+  assert.equal(s.stands(), 1)
   assert.equal(s.count(), 0)
+  s.feed(playerPose(), 500)
+  assert.equal(s.count(), 1)
 })
 
 function motionPose(rise, { clipped = false, headOnly = false } = {}) {

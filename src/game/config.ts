@@ -26,5 +26,6 @@ export const TRACKING = {
   rise: { hips: 0.32, shoulders: 0.5, head: 0.6 },
   seatedTolerance: { hips: 0.22, shoulders: 0.28, head: 0.32 },
   centerDrift: 0.12,
-  torsoScale: { min: 0.6, max: 1.65 },
+  // Retain the smaller-bystander cutoff; allow straightening to widen the body.
+  playerWidthScale: { min: 0.65, max: 1.9 },
 } as const

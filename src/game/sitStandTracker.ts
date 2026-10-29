@@ -45,14 +45,18 @@ function measure(points: LandmarkPoint[], baseline: Baseline | null): Measuremen
     if (baseline && name && (!base || Math.abs(value.x - base.x) >= TRACKING.centerDrift)) return null
     return value
   }
-  const hips = anchor([LANDMARK.LEFT_HIP, LANDMARK.RIGHT_HIP], 'hips')
+  let hips = anchor([LANDMARK.LEFT_HIP, LANDMARK.RIGHT_HIP], 'hips')
   const shoulders = anchor([LANDMARK.LEFT_SHOULDER, LANDMARK.RIGHT_SHOULDER], 'shoulders')
   const head = anchor([LANDMARK.NOSE], 'head') ?? anchor([7, 8], 'head')
   if (!hips && !shoulders && !head) return null
-  const torso = hips && shoulders ? hips.y - shoulders.y : null
-  if (torso !== null && (torso < 0.08 || (baseline && (
-    torso / baseline.torso <= TRACKING.torsoScale.min
-    || torso / baseline.torso >= TRACKING.torsoScale.max)))) return null
+  let torso = hips && shoulders ? hips.y - shoulders.y : null
+  // Straightening changes projected torso length, not the seated movement scale.
+  // An implausible hip/shoulder relationship disables hips, not valid upper anchors.
+  if (torso !== null && torso < 0.08) {
+    if (!baseline) return null
+    hips = null
+    torso = null
+  }
   const knees = anchor([LANDMARK.LEFT_KNEE, LANDMARK.RIGHT_KNEE])
   const pairWidth = (left: number, right: number) => anchor([left, right])
     ? Math.abs(points[left].x - points[right].x) : 0
