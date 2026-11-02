@@ -27,3 +27,4 @@ public/mediapipe/wasm/
 *.sln
 *.sw?
 .motion-in-bloom-device.local
+dashboard-dist/

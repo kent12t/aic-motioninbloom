@@ -161,3 +161,20 @@ loopback requests only; write errors appear in browser/server consoles without
 interrupting play. There is no retry queue or cloud analytics service.
 
 Run `npm run test:analytics` for schema, CSV persistence, and endpoint checks.
+# Offline results dashboard
+
+Open `/offline-results.html` using `npm run dev`, or `npm run build` followed by `npm run preview`. This independent entry does not start the game or camera; the game remains at `/`.
+
+The dashboard bundles `offline-results/*.csv` at build time. Rebuild after updating the data. It supports date, device, status, and outcome filters, summary metrics, charts, and paginated details. All displayed times and date filters use UTC+8 (Singapore); CSV source times remain UTC. Included datasets are visible to anyone who can access the built dashboard, so deploy only where that access is appropriate.
+
+Verification: `npm run test:dashboard` and, after building, `npx playwright test scripts/browser/dashboard.spec.mjs`.
+# Dashboard hosting
+
+The `offline-results` branch deploys the standalone dashboard to
+https://aic-motioninbloom-results.pages.dev/ using
+`.github/workflows/dashboard-cloudflare.yml`. Push updated CSVs to that branch to
+refresh the published snapshot. This is public data, not a private reporting site.
+`npm run build:dashboard` builds only the dashboard and fonts into `dashboard-dist/`;
+both `/` and `/offline-results.html` open the dashboard. The game, camera assets,
+and file-writing endpoint are not included. Cloudflare production on `master`
+is unchanged.

@@ -237,6 +237,11 @@ Target approximately three seconds per bloom, normalized to each clip's duration
 
 ### Local analytics
 
+- A standalone responsive analyst dashboard at `/offline-results.html` is separate from the portrait game and must not initialize the game, detector, or camera. It bundles the branch's `offline-results/*.csv` snapshot for dev and static production use; rebuilding refreshes that snapshot. Bundled data is accessible to anyone with access to the deployment.
+- The `offline-results` branch publishes only the dashboard and local fonts to the separate Cloudflare Pages project `aic-motioninbloom-results`, with relative asset URLs and the dashboard also at the site root. Keep this deployment separate from the Cloudflare production game on `master`.
+- Use the brand palette and local fonts, but allow a wide responsive data layout rather than the game's portrait stage. Include inclusive UTC+8 date filters, device/status/outcome filters, reset, summary metrics, daily round counts, outcome distribution, and paginated newest-first details. Display and group timestamps in Singapore time (UTC+8) on the frontend only; preserve raw UTC CSV timestamps and elapsed durations.
+- Completion rate includes all filtered rounds; average completion time uses only finished target-completing rounds. Show empty and malformed-row states, accessible labeled controls, keyboard focus, and text values alongside charts.
+
 - On localhost only, automatically append one CSV row per finished or interrupted started round (including timeouts) through the local Vite development/preview server. No controls, downloads, or changes to the player-facing flow.
 - Record completed cycles, target cycles, internal outcome, raw elapsed gameplay seconds, UTC gameplay start time, status (`finished`/`interrupted`), and interruption reason; exclude countdown/setup time. Record started rounds interrupted by restart, camera retry, or page exit. Page-exit delivery is best effort; browser/process crashes cannot be guaranteed.
 - Use a persistent, Git-ignored installation ID and a per-device CSV under `offline-results/`. Do not collect language, personal details, images, or pose landmarks. Hosted/LAN deployments do not send analytics.
@@ -257,6 +262,8 @@ For applicable UI/gameplay changes:
 ## 8. Implementation status
 
 Implemented:
+
+- Standalone offline-results dashboard with bundled CSV snapshots, UTC+8 display/date grouping, combined filters, summary metrics, daily/outcome charts, and paginated round details. Separate Vite HTML entry avoids loading game/camera code.
 
 - Camera setup 180° rotation toggle corrects preview and masked inference, resets player acquisition/calibration, and retains the stream and session orientation.
 
@@ -290,6 +297,8 @@ Known tracking limitations under investigation:
 - Real-person reports include missed standing within a round and failed seated acquisition slightly farther away. The whole-frame torso-ratio veto has been removed and standing width tolerance increased; minimum acquisition widths, paired visibility, and remaining continuity gates can still limit detection. Actual improvement and false-positive behavior need live-camera verification, including half-height seated versus near-full-height standing framing. Farther-away acquisition thresholds have deliberately not been relaxed in this first targeted change.
 
 Verification performed during implementation:
+
+- Offline results dashboard (2026-11-02): warning-free lint, build/typecheck, deployment artifact checks, four CSV/timezone/data tests, and four Chromium dashboard checks passed. Verified all 379 rows across two devices, UTC+8 day rollover, combined filtering, pagination/reset, empty state, no game/detector requests or video elements, 80%-scaled Windsor heading, and no page overflow at 390 × 844, 1440 × 900, and 900 × 500. Reviewed the mobile screenshot and corrected an overflowing device selector. Existing game/camera flows and assistive-technology behavior were not rechecked; gameplay code is unchanged.
 
 - Standing tolerance (2026-10-29): all 36 synthetic tracking/round tests, lint, production build/typecheck, and diff whitespace review passed, including torso extension, half-height seated to near-full-height standing through player selection and tracking, width-expansion/extreme-size rejection, and implausible-hip upper-anchor recovery. Existing jitter, clipping, raised-anchor return, missing-joint, and bystander protections remain covered. Real-person camera and browser gameplay checks have not been performed.
 
@@ -333,6 +342,8 @@ Verification performed during implementation:
 - Continuous-movement update (2026-10-23): a real-person Chrome/USB-camera retest of independent vertical anchors and short debouncing registered five alternating rise/return events and a standard result at 14.9 seconds, with the player asked to move naturally without endpoint pauses. Subsequent return refinements (lower seated positions, modestly changed head position, hip-first return evidence, and per-anchor rise confirmation) are covered by automated regressions. Final lint, production build, and all 20 tracker/round tests passed. Synthetic coverage includes five no-pause triangular cycles at 0.8, 1.2, and 2.0 seconds per cycle; head-only counting; head/shoulder top clipping with hips visible and unreliable knees; brief/long tracking loss; single-frame spikes; small bobs; threshold chatter; head bobs with raised hips; and disappearance of the risen anchor. Live top-of-frame clipping and live tracking-loss recovery remain unverified.
 
 Deployment automation:
+
+- Separate dashboard deployment (2026-11-02): `offline-results` pushes build a dashboard-only artifact and publish it to `aic-motioninbloom-results` using the existing Cloudflare credentials in the production environment. The game project and `master` workflow are unchanged. Warning-free lint, TypeScript check, four dashboard data tests, dashboard-only build, and Chromium checks of both root and `/offline-results.html` with loaded local fonts passed. GitHub Pages was unavailable for this repository's plan. Hosted deployment is verified separately after push.
 
 - GitHub Actions checks pull requests and `master` pushes before publishing the verified build artifact to Cloudflare Pages. Gates include dependency audit, zero-warning lint, tracker/round tests, typecheck/build, and required assets/Pages limits. Chromium production smoke tests run only through the separate manually dispatched `Browser smoke tests (manual)` workflow; they do not gate deployment. Normal deployments do not install browsers or their system dependencies. Smoke coverage is limited to startup/setup/restart, asset delivery, and WebM decoding/playback; it does not replace the camera-enabled and real-person verification above. See `README.md` for deployment credentials and manual browser-check instructions.
 - Local pipeline verification: locked install, dependency audit (zero reported vulnerabilities), zero-warning lint, all 11 tracker/round tests, production build, asset checks, and all seven Chromium smoke tests passed. A temporary missing-build-asset probe correctly failed the asset gate. Workflow YAML and job/artifact ordering were reviewed locally; a hosted Actions run remains pending activation.
