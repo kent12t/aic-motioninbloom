@@ -43,15 +43,11 @@ jobs:
         with:
           name: dashboard-dist
           path: dashboard-dist
-      - name: Create separate dashboard project if needed and deploy
+      - name: Deploy to existing dashboard project
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing CLOUDFLARE_API_TOKEN"; exit 1; }
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
-          npx --yes wrangler@4.151.3 pages project list --json > projects.json
-          if ! node -e 'const projects = require("./projects.json"); process.exit(projects.some(p => p.name === "aic-motioninbloom-results") ? 0 : 1)'; then
-            npx --yes wrangler@4.151.3 pages project create aic-motioninbloom-results --production-branch offline-results
-          fi
           npx --yes wrangler@4.151.3 pages deploy dashboard-dist --project-name aic-motioninbloom-results --branch offline-results --commit-hash "$GITHUB_SHA"
