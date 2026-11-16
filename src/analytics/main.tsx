@@ -4,7 +4,7 @@ import { localDate, localTime, readResults } from './data'
 import './style.css'
 
 const files = import.meta.glob('../../offline-results/*.csv', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
-const { results, skipped } = readResults(files)
+const { results, skipped } = readResults(files, ['2026-10-30', '2026-10-31'])
 const devices = [...new Set(results.map(row => row.device))].sort()
 const labels: Record<string, string> = { fast: 'Fast completion', standard: 'Standard completion', incomplete: 'Incomplete' }
 const PAGE_SIZE = 25
@@ -28,7 +28,7 @@ export function Dashboard() {
   function reset() { setFrom(''); setTo(''); setDevice(''); setStatus(''); setOutcome(''); setPage(0) }
   return <main>
     <header><p className="eyebrow">Motion in Bloom · Data explorer</p><h1>Offline results</h1>
-      <p>Round activity across {devices.length} devices. All dates and times are Singapore time (UTC+8).</p>
+      <p>30–31 October 2026 · Round activity across {devices.length} devices. All dates and times are Singapore time (UTC+8).</p>
       <p className="note">CSV snapshot bundled with this page. Rebuild to include updated files. No camera or game session is started.</p>
     </header>
     <section aria-label="Filter results" className="filters" onChange={() => setPage(0)}>

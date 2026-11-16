@@ -163,7 +163,7 @@ interrupting play. There is no retry queue or cloud analytics service.
 Run `npm run test:analytics` for schema, CSV persistence, and endpoint checks.
 # Offline results dashboard
 
-Open `/offline-results.html` using `npm run dev`, or `npm run build` followed by `npm run preview`. This independent entry does not start the game or camera; the game remains at `/`.
+Open `/offline-results.html` using `npm run dev`, or `npm run build` followed by `npm run preview`. This independent entry does not start the game or camera; the game remains at `/`. The dashboard includes only 30–31 October 2026 (Singapore time), even after resetting filters. The standalone `build:dashboard` artifact excludes other dates from its bundled CSV data without changing the source files.
 
 The dashboard bundles `offline-results/*.csv` at build time. Rebuild after updating the data. It supports date, device, status, and outcome filters, summary metrics, charts, and paginated details. All displayed times and date filters use UTC+8 (Singapore); CSV source times remain UTC. Included datasets are visible to anyone who can access the built dashboard, so deploy only where that access is appropriate.
 

@@ -29,6 +29,11 @@ test('loads both branch datasets without dropping rows and sorts newest first', 
   assert.equal(results.length, 379)
   assert.equal(new Set(results.map(row => row.device)).size, 2)
   assert.ok(results.every((row, i) => !i || Date.parse(results[i - 1].started) >= Date.parse(row.started)))
+  const selected = readResults(files, ['2026-10-30', '2026-10-31'])
+  assert.equal(selected.results.length, 375)
+  assert.equal(selected.skipped, 0)
+  assert.equal(selected.results.filter(row => localDate(row.started) === '2026-10-30').length, 359)
+  assert.equal(selected.results.filter(row => localDate(row.started) === '2026-10-31').length, 16)
 })
 
 test('invalid rows are reported instead of contaminating metrics', () => {

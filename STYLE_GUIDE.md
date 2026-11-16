@@ -239,6 +239,7 @@ Target approximately three seconds per bloom, normalized to each clip's duration
 
 - A standalone responsive analyst dashboard at `/offline-results.html` is separate from the portrait game and must not initialize the game, detector, or camera. It bundles the branch's `offline-results/*.csv` snapshot for dev and static production use; rebuilding refreshes that snapshot. Bundled data is accessible to anyone with access to the deployment.
 - The `offline-results` branch publishes only the dashboard and local fonts to the separate Cloudflare Pages project `aic-motioninbloom-results`, with relative asset URLs and the dashboard also at the site root. Keep this deployment separate from the Cloudflare production game on `master`.
+- The dashboard includes only 30–31 October 2026 in Singapore time. Resetting filters must not expose other dates. The standalone production build excludes other dates from bundled CSV data while preserving original source files.
 - Use the brand palette and local fonts, but allow a wide responsive data layout rather than the game's portrait stage. Include inclusive UTC+8 date filters, device/status/outcome filters, reset, summary metrics, daily round counts, outcome distribution, and paginated newest-first details. Display and group timestamps in Singapore time (UTC+8) on the frontend only; preserve raw UTC CSV timestamps and elapsed durations.
 - Completion rate includes all filtered rounds; average completion time uses only finished target-completing rounds. Show empty and malformed-row states, accessible labeled controls, keyboard focus, and text values alongside charts.
 
@@ -262,6 +263,8 @@ For applicable UI/gameplay changes:
 ## 8. Implementation status
 
 Implemented:
+
+- Dashboard restricted to 30–31 October 2026 (UTC+8), including reset behavior and standalone deployment data; source CSVs remain unchanged.
 
 - Standalone offline-results dashboard with bundled CSV snapshots, UTC+8 display/date grouping, combined filters, summary metrics, daily/outcome charts, and paginated round details. Separate Vite HTML entry avoids loading game/camera code.
 
@@ -297,6 +300,8 @@ Known tracking limitations under investigation:
 - Real-person reports include missed standing within a round and failed seated acquisition slightly farther away. The whole-frame torso-ratio veto has been removed and standing width tolerance increased; minimum acquisition widths, paired visibility, and remaining continuity gates can still limit detection. Actual improvement and false-positive behavior need live-camera verification, including half-height seated versus near-full-height standing framing. Farther-away acquisition thresholds have deliberately not been relaxed in this first targeted change.
 
 Verification performed during implementation:
+
+- Dashboard date scope (2026-11-16): warning-free lint, four data tests, full build/typecheck, standalone dashboard build, and four Chromium dashboard checks passed. Standalone production artifact verified at its root with 375 rounds (359 on 30 October, 16 on 31 October), and all bundled CSV timestamps checked to exclude other Singapore dates. Responsive overflow checks covered 390 × 844, 1440 × 900, and 900 × 500. Game/camera flows were unchanged and not rechecked.
 
 - Offline results dashboard (2026-11-02): warning-free lint, build/typecheck, deployment artifact checks, four CSV/timezone/data tests, and four Chromium dashboard checks passed. Verified all 379 rows across two devices, UTC+8 day rollover, combined filtering, pagination/reset, empty state, no game/detector requests or video elements, 80%-scaled Windsor heading, and no page overflow at 390 × 844, 1440 × 900, and 900 × 500. Reviewed the mobile screenshot and corrected an overflowing device selector. Existing game/camera flows and assistive-technology behavior were not rechecked; gameplay code is unchanged.
 

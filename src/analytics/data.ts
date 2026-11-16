@@ -30,7 +30,7 @@ export function parseCsv(text: string): string[][] {
   return rows
 }
 
-export function readResults(files: Record<string, string>) {
+export function readResults(files: Record<string, string>, includedDates?: readonly string[]) {
   const results: Result[] = []
   let skipped = 0
   for (const [path, text] of Object.entries(files)) {
@@ -47,7 +47,9 @@ export function readResults(files: Record<string, string>) {
         !['fast', 'standard', 'incomplete'].includes(outcome) || !['finished', 'interrupted'].includes(status)) {
         skipped++; return
       }
-      results.push({ id: `${path}:${index}`, device, cycles, target, seconds, started, outcome, status, reason: get('interruption_reason') })
+      if (!includedDates || includedDates.includes(localDate(started))) {
+        results.push({ id: `${path}:${index}`, device, cycles, target, seconds, started, outcome, status, reason: get('interruption_reason') })
+      }
     })
   }
   return { results: results.sort((a, b) => Date.parse(b.started) - Date.parse(a.started)), skipped }
