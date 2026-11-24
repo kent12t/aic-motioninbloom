@@ -1,6 +1,12 @@
 # Motion in Bloom
 
-A portrait browser-based booth game: complete five seated → standing → seated cycles within 40 seconds to grow a garden. React/TypeScript/Vite power the UI; MediaPipe Pose Landmarker runs locally in the browser. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before changing the design or interaction.
+A portrait, browser-based booth game: stand up and sit down five times in 40 seconds, and a flower grows on screen for each one. A camera reads the movement, and the pose model runs locally in the browser, so no images leave the device.
+
+Motion in Bloom was one of two games at the **National Celebration of Seniors 2026**, a two-day event in the Toa Payoh Hub atrium run by the Agency for Integrated Care (30–31 October 2026). It recorded 375 plays at the event.
+
+Live: [aic-motioninbloom.pages.dev](https://aic-motioninbloom.pages.dev/) · Case study: [kentlimanza.co/work/aic-ncos-2026](https://kentlimanza.co/work/aic-ncos-2026)
+
+React, TypeScript, and Vite power the UI, and MediaPipe Pose Landmarker does the tracking. Read [STYLE_GUIDE.md](STYLE_GUIDE.md) before changing the design or interaction.
 
 ## Development
 
@@ -17,8 +23,6 @@ Open the Vite localhost URL and allow camera access. `predev` and `prebuild` pre
 Fonts, artwork, flower WebMs, and derived stills are served locally from `public/`. The centered 9:16 stage fits the viewport with light-yellow space around it. Windsor labels/headings use 80% horizontal scaling.
 
 ## Player flow
-
-**Temporary screen-debugging mode:** `GAME.requireCalibration` is currently `false` in `src/game/config.ts`. “Play now” and countdown can proceed without a working camera or completed calibration. Set it back to `true` to restore the readiness gates described below. Calibration and real repetition detection remain active; the bypass does not create synthetic repetitions.
 
 1. Start seated and check the three safety acknowledgements. The first checked box starts the camera and background seated calibration; all three are required to continue.
 2. Read the four illustrated instructions. Use **Check camera** for framing guidance or camera retry. **Play now** enables once the camera and seated baseline are ready.
@@ -38,7 +42,7 @@ npm run preview
 
 Serve the generated `dist/` directory with a local static server for the booth. It includes the model and WASM; no inference server is required. Keep a consistent localhost origin/browser profile for camera permission. Preview checks the production build locally.
 
-The QR currently links to the current URL, so a localhost booth URL will not open the game on a visitor's phone.
+The result screen shows a static QR code image, `public/qrcode.png`, so a visitor can open the game on their own phone. Replace it if you host the game at a different URL.
 
 ### Automatic production deployment (Cloudflare Pages)
 
@@ -104,7 +108,7 @@ npx playwright install chromium
 npm run test:smoke
 ```
 
-These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. The fast automatic checks gate deployment; browser smoke tests are manual-only. Neither provides automatic rollback after publication. The documented temporary calibration bypass and current-page QR destination remain active.
+These checks do not certify real-person tracking, WebM alpha appearance, or booth-hardware performance; continue the manual checks below. The fast automatic checks gate deployment; browser smoke tests are manual-only. Neither provides automatic rollback after publication.
 
 The camera-persistence smoke test uses the real local MediaPipe detector with a synthetic camera stream. Chromium explicitly uses SwiftShader software WebGL so hosted runners do not need a physical GPU. This test has a 90-second budget and waits up to 60 seconds for successful first-frame inference before checking dialog/countdown continuity; other smoke tests retain their 30-second budget. It also checks that a static stream is not repeatedly inferred merely because its media clock advances, and that new camera frames are processed both during background setup and countdown.
 
@@ -136,7 +140,7 @@ Before booth use, manually check permission/setup, seated calibration, countdown
 `useMotionInBloomGame`, `CameraPanel`, and `MissionPanel`/`TaskList` are remnants of the older three-task flow, not the active application. Shared MediaPipe landmark indices remain in `src/types/game.ts`.
 
 The `public/videos/*-bud.png` and `*-bloom.png` files are transparent first/last-frame stills decoded from the matching WebM with FFmpeg's `libvpx-vp9` decoder. `*-flower.png` is the cropped, 600-pixel-high bloom used in result pots. Keep these derivatives in sync when replacing a video; they support failed-playback fallback and stable, consistently fitted result flowers.
-# Local game analytics
+## Local game analytics
 
 `npm run dev` and `npm run preview` automatically save finished and interrupted games when opened on
 `localhost`, `127.0.0.1`, or `[::1]`. After a production build, use `npm run preview`
@@ -161,3 +165,9 @@ loopback requests only; write errors appear in browser/server consoles without
 interrupting play. There is no retry queue or cloud analytics service.
 
 Run `npm run test:analytics` for schema, CSV persistence, and endpoint checks.
+
+## Credits
+
+Motion in Bloom was a team concept. Clarita was the creative for the event and Nadiah designed the final UI. Raja and Tammy handled client servicing and the event.
+
+I (Kent, [@kent12t](https://github.com/kent12t)) worked on the concept with the team and built the game, including the tracking and booth setup described here.
